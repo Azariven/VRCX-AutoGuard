@@ -8,7 +8,7 @@ function collectProfileText(profile) {
   return [profile?.bio, ...links].filter(Boolean).join("\n");
 }
 
-export function createProfileThreatGuard({ sendBlock, onLog = () => {}, isEnabled = () => true, getEnabledDomains = () => ["hexed.cc", "oversee.lol"], onScan = () => {} }) {
+export function createProfileThreatGuard({ sendBlock, onLog = () => {}, isEnabled = () => true, getEnabledDomains = () => ["hexed.cc", "oversee.lol"], onScan = () => {}, ensureReady = async () => {} }) {
   if (typeof sendBlock !== "function") throw new TypeError("sendBlock must be a function");
   const blocked = new Set();
   const inFlight = new Map();
@@ -18,6 +18,7 @@ export function createProfileThreatGuard({ sendBlock, onLog = () => {}, isEnable
   async function inspect(profile, currentUserId = "") {
     const userId = normalizeUserId(profile?.id);
     if (!userId || userId === normalizeUserId(currentUserId)) return { action: "ignore", reason: "invalid-or-current-user" };
+    await ensureReady();
     onScan({ userId, displayName: String(profile?.displayName || "") });
     if (!isEnabled()) return { action: "disabled", userId };
     const signals = detectProfileSignals(collectProfileText(profile), getEnabledDomains());
