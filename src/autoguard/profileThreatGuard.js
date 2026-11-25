@@ -8,26 +8,24 @@ function collectProfileText(profile) {
   return [profile?.bio, ...links].filter(Boolean).join("\n");
 }
 
-/**
- * @param {{
- *   sendBlock: (userId: string) => Promise<unknown>,
- *   onLog?: (entry: Record<string, unknown>) => void
- * }} options
- */
-export function createProfileThreatGuard({ sendBlock, onLog = () => {} }) {
+export function createProfileThreatGuard({ sendBlock, onLog = () => {}, isEnabled = () => true, getEnabledDomains = () => ["hexed.cc", "oversee.lol"], onScan = () => {} }) {
   if (typeof sendBlock !== "function") throw new TypeError("sendBlock must be a function");
   const blocked = new Set();
   const inFlight = new Map();
-  const queue = createModerationQueue({
-    sendBlock, maxRetries: 3, baseDelayMs: 1000,
-    onLog: entry => onLog({ source: "profile-bio-domain", ...entry })
-  });
+  const queue = createModerationQueue({ sendBlock, maxRetries: 3, baseDelayMs: 1000,
+    onLog: entry => onLog({ source: "profile-bio-domain", ...entry }) });
 
   async function inspect(profile, currentUserId = "") {
     const userId = normalizeUserId(profile?.id);
     if (!userId || userId === normalizeUserId(currentUserId)) return { action: "ignore", reason: "invalid-or-current-user" };
-    const signals = detectProfileSignals(collectProfileText(profile));
-    if (!signals.length) return { action: "no-match", userId };
+    onScan({ userId, displayName: String(profile?.displayName || "") });
+    if (!isEnabled()) return { action: "disabled", userId };
+    const signals = detectProfileSignals(collectProfileText(profile), getEnabledDomains());
+    if (!signals.length) {
+      const entry = { action: "no-match", userId, displayName: String(profile?.displayName || "") };
+      onLog(entry);
+      return entry;
+    }
     if (blocked.has(userId)) return { action: "already-blocked", userId, signals };
     if (inFlight.has(userId)) return inFlight.get(userId);
 
@@ -35,8 +33,7 @@ export function createProfileThreatGuard({ sendBlock, onLog = () => {} }) {
       .then(result => {
         blocked.add(userId);
         const entry = { action: "blocked", userId, displayName: String(profile.displayName || ""),
-          matchedDomains: signals.map(signal => signal.domain), matchedRules: signals.map(signal => signal.id),
-          moderationResult: result };
+          matchedDomains: signals.map(signal => signal.domain), matchedRules: signals.map(signal => signal.id) };
         onLog(entry);
         return entry;
       })
