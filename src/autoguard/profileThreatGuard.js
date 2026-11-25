@@ -8,7 +8,12 @@ function collectProfileText(profile) {
   return [profile?.bio, ...links].filter(Boolean).join("\n");
 }
 
-/** Scan loaded public profiles and immediately send a VRChat block request on a designated domain match. */
+/**
+ * @param {{
+ *   sendBlock: (userId: string) => Promise<unknown>,
+ *   onLog?: (entry: Record<string, unknown>) => void
+ * }} options
+ */
 export function createProfileThreatGuard({ sendBlock, onLog = () => {} } = {}) {
   if (typeof sendBlock !== "function") throw new TypeError("sendBlock must be a function");
   const blocked = new Set();
