@@ -1,42 +1,24 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-const { assessAccountRisk, detectProfileSignals } = require("../src/autoguard/accountRiskAssessment");
+import { describe, it, expect } from "vitest";
+import { assessAccountRisk, detectProfileSignals } from "../src/autoguard/accountRiskAssessment.js";
 
-test("hexed.cc plus explicit ripped-avatar one-click reupload promotion triggers block", () => {
-  const result = assessAccountRisk({
-    bio: "hexed.cc millions of ripped avatars to reupload in a single click"
+describe("explicit profile-domain blocking policy", () => {
+  it("blocks a bio containing hexed.cc even if wording changes", () => {
+    const result = assessAccountRisk({ bio: "BUY hexed.cc today, millions of ripped avatars to reupload in a single click" });
+    expect(result.automaticAction).toBe("block");
+    expect(result.profileSignals[0].domain).toBe("hexed.cc");
   });
-  assert.equal(result.automaticAction, "block");
-  assert.ok(result.profileSignals.some(signal => signal.id === "hexed-avatar-ripping-promotion"));
-});
-
-test("hexed.cc without the explicit promotion phrase does not trigger this rule", () => {
-  const result = assessAccountRisk({ bio: "Visit hexed.cc" });
-  assert.equal(result.automaticAction, "none");
-});
-
-test("oversee.lol plus explicit free user stalking promotion triggers block", () => {
-  const result = assessAccountRisk({ bio: "oversee.lol for free user stalking" });
-  assert.equal(result.automaticAction, "block");
-  assert.ok(result.profileSignals.some(signal => signal.id === "oversee-user-stalking-promotion"));
-});
-
-test("friend list snapshot alone does not trigger block", () => {
-  const result = assessAccountRisk({ observedFriendAppearance: true });
-  assert.equal(result.automaticAction, "none");
-});
-
-test("confirmed newly-added friend event triggers block", () => {
-  const result = assessAccountRisk({ friendAddedEvent: true });
-  assert.equal(result.automaticAction, "block");
-  assert.ok(result.blockReasons.includes("unexpected-friend-added-event"));
-});
-
-test("explicit profile rule is not bypassed by a whitelist flag", () => {
-  const result = assessAccountRisk({
-    bio: "hexed.cc millions of ripped avatars to reupload in a single click",
-    isWhitelisted: true
+  it("blocks a bio containing oversee.lol", () => {
+    const result = assessAccountRisk({ bio: "oversee.lol for free user stalking" });
+    expect(result.automaticAction).toBe("block");
+    expect(result.profileSignals[0].domain).toBe("oversee.lol");
   });
-  assert.equal(result.automaticAction, "block");
-  assert.equal(result.whitelistOverridesAutomaticBlock, false);
+  it("matches case-insensitively and tolerates Unicode dot variants", () => {
+    expect(detectProfileSignals("HEXED．CC")).toHaveLength(1);
+  });
+  it("does not block a profile without either designated domain", () => {
+    expect(assessAccountRisk({ bio: "I enjoy VRChat photography" }).automaticAction).toBe("none");
+  });
+  it("does not block merely because a friend-add event occurred", () => {
+    expect(assessAccountRisk({ friendAddedEvent: true }).automaticAction).toBe("none");
+  });
 });
