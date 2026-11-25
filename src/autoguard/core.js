@@ -105,6 +105,7 @@ export function recordPreview(state, key, entry) {
  */
 export function createModerationQueue({ sendBlock, onLog = () => {}, maxRetries = 3, baseDelayMs = 1000 }) {
     if (typeof sendBlock !== 'function') throw new TypeError('sendBlock must be a function');
+    /** @type {Promise<unknown>} */
     let queue = Promise.resolve();
     let disposed = false;
 
