@@ -1,16 +1,54 @@
-name: AutoGuard tests
+name: AutoGuard tests and VRCX integration
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 jobs:
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm install
       - run: npm test
+
+  vrcx-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: vrcx-team/VRCX
+          ref: e819c4e4ee13218393fcf8263e7745971dfc9821
+          path: vrcx-source
+      - name: Copy AutoGuard modules and validate patch
+        run: |
+          mkdir -p vrcx-source/src/autoguard
+          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js vrcx-source/src/autoguard/
+          git -C vrcx-source apply --check "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+          git -C vrcx-source apply "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: vrcx-source/package-lock.json
+      - name: Install VRCX dependencies
+        working-directory: vrcx-source
+        run: npm ci
+      - name: VRCX JavaScript typecheck
+        working-directory: vrcx-source
+        run: npm run typecheck:js
+      - name: VRCX Vue typecheck
+        working-directory: vrcx-source
+        run: npm run typecheck:vue
+      - name: Build VRCX renderer
+        working-directory: vrcx-source
+        run: npm run prod
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: vrcx-autoguard-renderer-dist
+          path: vrcx-source/dist
+          if-no-files-found: error
