@@ -39,14 +39,14 @@ function detectProfileSignals(bio) {
 }
 
 /**
- * Returns a policy decision for VRCX to execute.
- * A friend-list snapshot alone is not a newly-added event.
- * The caller must provide friendAddedEvent only from a confirmed VRCX event.
+ * Policy decision for VRCX enforcement.
+ * A current friend-list snapshot is not proof of a newly-added event.
+ * friendAddedEvent must come from a confirmed VRCX relationship event.
+ * Explicit promotion matches and confirmed new-friend events are block decisions.
  */
 function assessAccountRisk(input = {}) {
   const profileSignals = detectProfileSignals(input.bio);
   const observations = [];
-  const isWhitelisted = input.isWhitelisted === true;
 
   if (input.friendAddedEvent === true) {
     observations.push({
@@ -66,30 +66,20 @@ function assessAccountRisk(input = {}) {
     });
   }
 
-  if (input.accountHistoryLooksEstablished === true) {
-    observations.push({
-      id: "established-account-history",
-      category: "context-only",
-      severity: "informational",
-      evidence: input.accountHistoryNote || "Account appears to have an established usage history."
-    });
-  }
-
   const matchedProfileBlock = profileSignals.length > 0;
   const confirmedNewFriend = input.friendAddedEvent === true;
-  const shouldBlock = !isWhitelisted && (matchedProfileBlock || confirmedNewFriend);
+  const shouldBlock = matchedProfileBlock || confirmedNewFriend;
 
   return {
-    reviewLevel: shouldBlock ? "block" : (profileSignals.length || observations.length ? "review" : "none"),
+    reviewLevel: shouldBlock ? "block" : (observations.length ? "review" : "none"),
     profileSignals,
     observations,
     automaticAction: shouldBlock ? "block" : "none",
     blockReasons: [
-      ...(matchedProfileBlock ? profileSignals.map(signal => signal.id) : []),
-      ...(confirmedNewFriend && !isWhitelisted ? ["unexpected-friend-added-event"] : [])
+      ...profileSignals.map(signal => signal.id),
+      ...(confirmedNewFriend ? ["unexpected-friend-added-event"] : [])
     ],
-    isWhitelisted,
-    whitelistOverridesAutomaticBlock: true,
+    whitelistOverridesAutomaticBlock: false,
     requiresConfirmedFriendAddedEvent: true
   };
 }
