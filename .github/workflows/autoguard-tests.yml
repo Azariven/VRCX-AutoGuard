@@ -43,15 +43,16 @@ jobs:
         shell: bash
         run: |
           set +e
+          mkdir -p /tmp/vrcx-baseline
+          git archive HEAD | tar -x -C /tmp/vrcx-baseline
+          ln -s "$GITHUB_WORKSPACE/vrcx-source/node_modules" /tmp/vrcx-baseline/node_modules
           for script in typecheck:js typecheck:vue; do
-            git apply -R "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
-            npm run "$script" > "/tmp/${script//:/-}-baseline.log" 2>&1
+            (cd /tmp/vrcx-baseline && npm run "$script") > "/tmp/${script//:/-}-baseline.log" 2>&1
             baseline_status=$?
-            git apply "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
             npm run "$script" > "/tmp/${script//:/-}-patched.log" 2>&1
             patched_status=$?
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/\\([0-9]+,[0-9]+\\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/\\([0-9]+,[0-9]+\\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
             if ! diff -u "/tmp/${script//:/-}-baseline-errors.txt" "/tmp/${script//:/-}-patched-errors.txt"; then
               echo "AutoGuard introduced new $script diagnostics."
               cat "/tmp/${script//:/-}-patched.log"
