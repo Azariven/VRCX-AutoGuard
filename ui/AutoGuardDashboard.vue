@@ -14,7 +14,7 @@ const statusText = computed(() => props.enabled ? '監控已啟用' : '尚未連
 const eventLabel = (event) => ({
   blocked: '已送出封鎖',
   error: '封鎖失敗',
-  no-match: '未命中規則',
+  'no-match': '未命中規則',
   'already-blocked': '已處理過'
 }[event.action] || event.action || '事件');
 const eventClass = (event) => event.action === 'blocked' ? 'success' : event.action === 'error' ? 'danger' : 'muted';
