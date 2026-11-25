@@ -1,0 +1,4 @@
+# Integration hook plan (verify exact VRCX revision before applying)
+# 1. Live friend-request pipeline: invoke runtime.pipeline asynchronously; never await moderation in VRCX event path.
+# 2. Game-log join/leave/avatar-change: record telemetry asynchronously.
+# 3. Leave and avatar-change signals are review-only; do not infer avatar ripping.
