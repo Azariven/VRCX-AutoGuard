@@ -14,7 +14,7 @@ function collectProfileText(profile) {
  *   onLog?: (entry: Record<string, unknown>) => void
  * }} options
  */
-export function createProfileThreatGuard({ sendBlock, onLog = () => {} } = {}) {
+export function createProfileThreatGuard({ sendBlock, onLog = () => {} }) {
   if (typeof sendBlock !== "function") throw new TypeError("sendBlock must be a function");
   const blocked = new Set();
   const inFlight = new Map();
