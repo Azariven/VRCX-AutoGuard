@@ -92,10 +92,6 @@ export function recordPreview(state, key, entry) {
 }
 
 /**
- * Serial moderation queue with bounded exponential backoff.
- * The caller must pass VRCX's existing authenticated moderation method.
- */
-/**
  * @param {{
  *   sendBlock: (userId: string) => Promise<unknown>,
  *   onLog?: (entry: Record<string, unknown>) => void,
