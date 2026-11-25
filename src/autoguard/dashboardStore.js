@@ -5,6 +5,7 @@ const CONFIG_KEY = 'VRCX_autoGuardConfig';
 const state = reactive({
   enabled: true,
   rules: { 'hexed.cc': true, 'oversee.lol': true },
+  /** @type {Array<{id: string, timestamp: string, action?: string, [key: string]: any}>} */
   events: [],
   scannedCount: 0,
   blockedCount: 0,
