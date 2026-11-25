@@ -51,8 +51,8 @@ jobs:
             baseline_status=$?
             npm run "$script" > "/tmp/${script//:/-}-patched.log" 2>&1
             patched_status=$?
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/\\([0-9]+,[0-9]+\\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/\\([0-9]+,[0-9]+\\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
             if ! diff -u "/tmp/${script//:/-}-baseline-errors.txt" "/tmp/${script//:/-}-patched-errors.txt"; then
               echo "AutoGuard introduced new $script diagnostics."
               cat "/tmp/${script//:/-}-patched.log"
