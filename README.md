@@ -13,11 +13,11 @@ VRCX AutoGuard is a defensive monitoring and moderation-integration project for 
 
 ## Layout
 
-- `src/autoguard/` — runtime, matching, monitoring, persistence, and moderation adapter.
+- `src/autoguard/` — runtime, matching, monitoring, persistence, moderation adapter, and profile-bio indicator scanner.
 - `data/known-users.json` — imported candidate ID watchlist (IDs are format-validated, not independently verified as malicious).
 - `integration/` — VRCX integration component and patches.
 - `tests/` — automated tests.
-- `docs/` — imported project documentation.
+- `docs/` — project documentation, including `THREAT_INDICATORS.md` for suspicious profile-bio promotion.
 
 ## Important limitations
 
