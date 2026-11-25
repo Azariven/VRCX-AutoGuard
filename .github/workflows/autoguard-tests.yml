@@ -94,6 +94,22 @@ jobs:
       - name: Install VRCX dependencies
         working-directory: vrcx-source
         run: npm ci
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build VRCX Electron .NET core
+        working-directory: vrcx-source
+        run: dotnet build 'Dotnet/VRCX-Electron.csproj' -p:Configuration=Release -p:WarningLevel=0 -p:Platform=x64 -t:"Clean;Build" -maxcpucount --runtime win-x64
+      - name: Verify Electron .NET core output
+        working-directory: vrcx-source
+        shell: pwsh
+        run: |
+          $core = "build/Electron/win-x64/VRCX-Electron.cjs"
+          if (!(Test-Path $core)) {
+            throw "Missing required Electron core: $core"
+          }
+          Get-Item $core | Format-List FullName, Length
       - name: Build VRCX renderer
         working-directory: vrcx-source
         run: npm run prod
