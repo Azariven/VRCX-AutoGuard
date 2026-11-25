@@ -65,6 +65,43 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: vrcx-autoguard-renderer-dist
+          name: vrcx-autoguard-renderer-build
           path: vrcx-source/build/html
+          if-no-files-found: error
+
+  vrcx-windows-app:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: vrcx-team/VRCX
+          ref: e819c4e4ee13218393fcf8263e7745971dfc9821
+          path: vrcx-source
+      - name: Copy AutoGuard modules and apply patch
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force vrcx-source/src/autoguard | Out-Null
+          Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js -Destination vrcx-source/src/autoguard/
+          git -C vrcx-source apply --check "$env:GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+          git -C vrcx-source apply "$env:GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: vrcx-source/package-lock.json
+      - name: Install VRCX dependencies
+        working-directory: vrcx-source
+        run: npm ci
+      - name: Build VRCX renderer
+        working-directory: vrcx-source
+        run: npm run prod
+      - name: Build Windows VRCX installer
+        working-directory: vrcx-source
+        run: npm run build-electron
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: vrcx-autoguard-windows-installer
+          path: vrcx-source/build/*.exe
           if-no-files-found: error
