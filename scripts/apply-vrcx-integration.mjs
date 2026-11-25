@@ -109,4 +109,59 @@ await patchFile("src/coordinators/gameLogCoordinator.js", [
   ]
 ]);
 
+
+await patchFile("src/coordinators/userCoordinator.js", [
+  [
+    "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';",
+    "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';\\n" +
+    "import { getEnabledAutoGuardDomains, recordAutoGuardEvent, recordAutoGuardScan, useAutoGuardDashboardState } from '../autoguard/dashboardStore.js';",
+    "dashboard store imports"
+  ],
+  [
+    "    onLog: (entry) => console.info('[VRCX AutoGuard]', entry)",
+    "    onLog: (entry) => recordAutoGuardEvent(entry),\\n" +
+    "    onScan: (entry) => recordAutoGuardScan(entry),\\n" +
+    "    isEnabled: () => useAutoGuardDashboardState().enabled,\\n" +
+    "    getEnabledDomains: getEnabledAutoGuardDomains",
+    "dashboard event and settings wiring"
+  ]
+]);
+
+await patchFile("src/plugins/router.js", [
+  [
+    "import MainLayout from '../views/Layout/MainLayout.vue';",
+    "import MainLayout from '../views/Layout/MainLayout.vue';\\nimport AutoGuard from '../views/AutoGuard/AutoGuard.vue';",
+    "AutoGuard route import"
+  ],
+  [
+    "{ path: 'feed', name: 'feed', component: Feed },",
+    "{ path: 'feed', name: 'feed', component: Feed },\\n            { path: 'auto-guard', name: 'auto-guard', component: AutoGuard, meta: { navKey: 'auto-guard' } },",
+    "AutoGuard route"
+  ]
+]);
+
+await patchFile("src/shared/constants/ui.js", [
+  [
+    "        key: 'search',\\n        icon: 'ri-search-line',\\n        tooltip: 'nav_tooltip.search',\\n        labelKey: 'nav_tooltip.search',\\n        routeName: 'search'\\n    },",
+    "        key: 'search',\\n        icon: 'ri-search-line',\\n        tooltip: 'nav_tooltip.search',\\n        labelKey: 'nav_tooltip.search',\\n        routeName: 'search'\\n    },\\n    { key: 'auto-guard', icon: 'ri-shield-check-line', tooltip: 'nav_tooltip.auto_guard', labelKey: 'nav_tooltip.auto_guard', routeName: 'auto-guard' },",
+    "AutoGuard navigation definition"
+  ]
+]);
+
+await patchFile("src/components/nav-menu/navLayoutDefaults.js", [
+  [
+    "        { type: 'item', key: 'search' },",
+    "        { type: 'item', key: 'search' },\\n        { type: 'item', key: 'auto-guard' },",
+    "AutoGuard default navigation entry"
+  ]
+]);
+
+await patchFile("src/localization/zh-TW.json", [
+  [
+    '        "search": "搜尋",',
+    '        "search": "搜尋",\\n        "auto_guard": "AutoGuard 防護中心",',
+    "AutoGuard Traditional Chinese label"
+  ]
+]);
+
 console.log("VRCX AutoGuard integration applied to " + root);
