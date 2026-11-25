@@ -83,10 +83,14 @@ jobs:
         run: |
           git -C vrcx-source config core.autocrlf false
           git -C vrcx-source reset --hard HEAD
+          $patchPath = Join-Path $env:GITHUB_WORKSPACE 'integration/vrcx-profile-bio-autoblock.patch'
+          $patchText = [System.IO.File]::ReadAllText($patchPath) -replace "`r`n", "`n"
+          $normalizedPatch = Join-Path $env:RUNNER_TEMP 'vrcx-autoguard.patch'
+          [System.IO.File]::WriteAllText($normalizedPatch, $patchText, [System.Text.UTF8Encoding]::new($false))
           New-Item -ItemType Directory -Force vrcx-source/src/autoguard | Out-Null
           Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js -Destination vrcx-source/src/autoguard/
-          git -C vrcx-source apply --check "$env:GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
-          git -C vrcx-source apply "$env:GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+          git -C vrcx-source apply --check --ignore-whitespace $normalizedPatch
+          git -C vrcx-source apply --ignore-whitespace $normalizedPatch
       - uses: actions/setup-node@v4
         with:
           node-version: 24.15.0
