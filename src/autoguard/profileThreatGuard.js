@@ -8,6 +8,16 @@ function collectProfileText(profile) {
   return [profile?.bio, ...links].filter(Boolean).join("\n");
 }
 
+/**
+ * @param {{
+ *  sendBlock: (userId: string) => Promise<unknown>,
+ *  onLog?: (entry: Record<string, any>) => void,
+ *  isEnabled?: () => boolean,
+ *  getEnabledDomains?: () => string[],
+ *  onScan?: (entry: Record<string, any>) => void,
+ *  ensureReady?: () => Promise<void>
+ * }} options
+ */
 export function createProfileThreatGuard({ sendBlock, onLog = () => {}, isEnabled = () => true, getEnabledDomains = () => ["hexed.cc", "oversee.lol"], onScan = () => {}, ensureReady = async () => {} }) {
   if (typeof sendBlock !== "function") throw new TypeError("sendBlock must be a function");
   const blocked = new Set();
