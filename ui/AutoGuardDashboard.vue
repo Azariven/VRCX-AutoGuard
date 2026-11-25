@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted } from 'vue';
-import { initAutoGuardStore, setAutoGuardEnabled, setAutoGuardRule, useAutoGuardDashboardState } from '../src/autoguard/dashboardStore.js';
+import { initAutoGuardStore, setAutoGuardEnabled, setAutoGuardRule, useAutoGuardDashboardState } from '../../autoguard/dashboardStore.js';
 
 const state = useAutoGuardDashboardState();
 const recentEvents = computed(() => [...state.events].slice(-100).reverse());
