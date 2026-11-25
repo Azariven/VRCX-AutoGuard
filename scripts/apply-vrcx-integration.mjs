@@ -114,7 +114,7 @@ await patchFile("src/coordinators/userCoordinator.js", [
   [
     "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';",
     "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';\n" +
-    "import { getEnabledAutoGuardDomains, recordAutoGuardEvent, recordAutoGuardScan, useAutoGuardDashboardState } from '../autoguard/dashboardStore.js';",
+    "import { getEnabledAutoGuardDomains, initAutoGuardStore, recordAutoGuardEvent, recordAutoGuardScan, useAutoGuardDashboardState } from '../autoguard/dashboardStore.js';",
     "dashboard store imports"
   ],
   [
@@ -122,7 +122,7 @@ await patchFile("src/coordinators/userCoordinator.js", [
     "    onLog: (entry) => recordAutoGuardEvent(entry),\n" +
     "    onScan: (entry) => recordAutoGuardScan(entry),\n" +
     "    isEnabled: () => useAutoGuardDashboardState().enabled,\n" +
-    "    getEnabledDomains: getEnabledAutoGuardDomains",
+    "    getEnabledDomains: getEnabledAutoGuardDomains,\n    ensureReady: initAutoGuardStore",
     "dashboard event and settings wiring"
   ]
 ]);
