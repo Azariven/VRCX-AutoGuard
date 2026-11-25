@@ -1,20 +1,7 @@
-# AutoGuard Dashboard UI
+# AutoGuard 原生整合狀態
 
-This directory contains the first Vue 3 dashboard view for the VRCX AutoGuard panel.
+Dashboard 元件現在讀取 VRCX renderer 內共用的 reactive store，並提供總開關與兩個網域規則開關。設定透過 VRCX configRepository 保存；事件最多保留 200 筆於本次執行階段。
 
-## Included view
+整合腳本會把頁面掛入 VRCX 路由與原生左側導覽，並將 profile guard 的掃描／封鎖結果送入同一個 store。封鎖成功只在 VRCX moderation API Promise 成功回傳後計數。
 
-- `AutoGuardDashboard.vue`: status, scan/block/failure counters, the two configured domain rules, and recent activity.
-- The view is intentionally driven by props. It does not fabricate activity or claim protection is active when no event source is connected.
-
-## Required VRCX wiring (not yet completed)
-
-1. Add the view to VRCX's navigation/router using the exact UI entry points in the VRCX source revision being built.
-2. Replace the current `console.info('[VRCX AutoGuard]', entry)` callback with a small reactive event store.
-3. Pass the store's events and counters to this component.
-4. Add timestamps and a bounded event history; do not persist full Bio text by default.
-5. Verify the view with a test profile and confirm that the VRChat moderation API response is successful before incrementing the blocked counter.
-
-## Current limitation
-
-The existing AutoGuard integration patch hooks profile loading and sends moderation requests, but it only writes logs to the developer console. The dashboard component is therefore a UI foundation, not yet a visible VRCX tab. Navigation and live event-store wiring must be completed against the exact VRCX source tree used for the installer.
+仍需以 Windows CI build 驗證 Vue/renderer/Electron installer，並在實際 VRCX 登入環境測試 API 行為。
