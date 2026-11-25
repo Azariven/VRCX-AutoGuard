@@ -81,6 +81,8 @@ jobs:
       - name: Copy AutoGuard modules and apply patch
         shell: pwsh
         run: |
+          git -C vrcx-source config core.autocrlf false
+          git -C vrcx-source reset --hard HEAD
           New-Item -ItemType Directory -Force vrcx-source/src/autoguard | Out-Null
           Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js -Destination vrcx-source/src/autoguard/
           git -C vrcx-source apply --check "$env:GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
