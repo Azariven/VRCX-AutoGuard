@@ -1,25 +1,22 @@
-const DOMAIN_RULES = [
+const PROMOTION_RULES = [
   {
     id: "hexed-avatar-ripping-promotion",
     domain: "hexed.cc",
+    requiredPattern: /(?:millions?\s+of\s+)?ripped\s+avatars?.{0,100}(?:reupload|re-upload).{0,60}(?:one[- ]click|single\s+click)|(?:one[- ]click|single\s+click).{0,60}(?:reupload|re-upload).{0,60}ripped\s+avatars?/i,
     category: "avatar-theft-promotion",
     severity: "high",
-    rationale: "Profile promotes ripped avatars or one-click reuploading. This is a strong profile-level risk indicator, not proof of the account owner's conduct or account compromise."
+    action: "block",
+    rationale: "Exact domain plus explicit promotion of ripped avatars and one-click reuploading."
   },
   {
-    id: "oversee-user-tracking-promotion",
+    id: "oversee-user-stalking-promotion",
     domain: "oversee.lol",
+    requiredPattern: /(?:free\s+)?user\s+stalking|stalking\s+users?/i,
     category: "privacy-invasive-tracking-promotion",
-    severity: "medium",
-    rationale: "Profile promotes tracking or stalking users. Treat as a privacy/safety concern, not direct evidence of avatar theft."
+    severity: "high",
+    action: "block",
+    rationale: "Exact domain plus explicit promotion of free user stalking/tracking."
   }
-];
-
-const PHRASES = [
-  { id: "ripped-avatar", pattern: /\b(ripped|rip|ripping)\s+(vrchat\s+)?avatars?\b/i, category: "avatar-theft-promotion", severity: "high" },
-  { id: "reupload-avatars", pattern: /\b(reupload|re-upload|upload again)\b.{0,50}\bavatars?\b/i, category: "avatar-theft-promotion", severity: "high" },
-  { id: "one-click-avatar-rip", pattern: /\bone[- ]click\b.{0,50}\b(rip|ripped|reupload|avatar)s?\b/i, category: "avatar-theft-promotion", severity: "high" },
-  { id: "user-stalking", pattern: /\b(user stalking|stalk(ing)? users?|track(ing)? users?)\b/i, category: "privacy-invasive-tracking-promotion", severity: "medium" }
 ];
 
 function normalizeText(value) {
@@ -28,54 +25,44 @@ function normalizeText(value) {
 
 function detectProfileSignals(bio) {
   const text = normalizeText(bio);
-  const signals = [];
-
-  for (const rule of DOMAIN_RULES) {
-    if (text.includes(rule.domain)) {
-      signals.push({
-        id: rule.id,
-        category: rule.category,
-        severity: rule.severity,
-        evidence: rule.domain,
-        rationale: rule.rationale
-      });
-    }
-  }
-
-  for (const rule of PHRASES) {
-    const match = text.match(rule.pattern);
-    if (match) {
-      signals.push({
-        id: rule.id,
-        category: rule.category,
-        severity: rule.severity,
-        evidence: match[0],
-        rationale: "Matched a profile phrase associated with the stated promotion."
-      });
-    }
-  }
-
-  return signals.filter((signal, index, all) =>
-    all.findIndex(item => item.id === signal.id) === index
-  );
+  return PROMOTION_RULES
+    .filter(rule => text.includes(rule.domain) && rule.requiredPattern.test(text))
+    .map(rule => ({
+      id: rule.id,
+      category: rule.category,
+      severity: rule.severity,
+      evidence: rule.domain,
+      matchedText: text.match(rule.requiredPattern)?.[0] || "",
+      rationale: rule.rationale,
+      policyAction: rule.action
+    }));
 }
 
 /**
- * Assess observations without claiming identity, intent, or account compromise.
- * observedFriendAppearance must be supplied by a real VRCX event/history source;
- * never infer it merely because the current friend list contains the user.
+ * Returns a policy decision for VRCX to execute.
+ * A friend-list snapshot alone is not a newly-added event.
+ * The caller must provide friendAddedEvent only from a confirmed VRCX event.
  */
 function assessAccountRisk(input = {}) {
   const profileSignals = detectProfileSignals(input.bio);
   const observations = [];
+  const isWhitelisted = input.isWhitelisted === true;
 
-  if (input.observedFriendAppearance === true) {
+  if (input.friendAddedEvent === true) {
     observations.push({
-      id: "unexpected-friend-list-appearance",
+      id: "unexpected-friend-added-event",
+      category: "unexpected-friend-relationship",
+      severity: "high",
+      evidence: input.friendObservation || "VRCX reported a newly-added friend relationship.",
+      policyAction: "block"
+    });
+  } else if (input.observedFriendAppearance === true) {
+    observations.push({
+      id: "friend-present-in-snapshot-only",
       category: "relationship-state-anomaly",
-      severity: "low",
-      evidence: input.friendObservation || "User reports an unexpected appearance in the friend list.",
-      rationale: "May reflect sync/cache behavior, an old relationship event, or an unrecognized action; not proof of account compromise."
+      severity: "informational",
+      evidence: input.friendObservation || "Account appeared in a friend-list snapshot.",
+      policyAction: "review-only"
     });
   }
 
@@ -84,29 +71,26 @@ function assessAccountRisk(input = {}) {
       id: "established-account-history",
       category: "context-only",
       severity: "informational",
-      evidence: input.accountHistoryNote || "Account appears to have a long usage history.",
-      rationale: "Account age or trusted status does not prove safety and does not prove compromise."
+      evidence: input.accountHistoryNote || "Account appears to have an established usage history."
     });
   }
 
-  const categories = new Set(profileSignals.map(signal => signal.category));
-  const hasHighRiskBio = profileSignals.some(signal => signal.severity === "high");
-  const hasRelationshipAnomaly = observations.some(item => item.id === "unexpected-friend-list-appearance");
-
-  let reviewLevel = "none";
-  if (hasHighRiskBio) reviewLevel = "priority-manual-review";
-  else if (profileSignals.length || hasRelationshipAnomaly) reviewLevel = "manual-review";
+  const matchedProfileBlock = profileSignals.length > 0;
+  const confirmedNewFriend = input.friendAddedEvent === true;
+  const shouldBlock = !isWhitelisted && (matchedProfileBlock || confirmedNewFriend);
 
   return {
-    reviewLevel,
+    reviewLevel: shouldBlock ? "block" : (profileSignals.length || observations.length ? "review" : "none"),
     profileSignals,
     observations,
-    combinedContext: hasHighRiskBio && hasRelationshipAnomaly
-      ? "Profile promotion and an independently reported friend-list anomaly coexist. Investigate separately; this combination still does not establish account theft, impersonation, or avatar theft by this account."
-      : null,
-    categories: [...categories],
-    automaticAction: "none",
-    autoBlockAllowedFromTheseSignals: false
+    automaticAction: shouldBlock ? "block" : "none",
+    blockReasons: [
+      ...(matchedProfileBlock ? profileSignals.map(signal => signal.id) : []),
+      ...(confirmedNewFriend && !isWhitelisted ? ["unexpected-friend-added-event"] : [])
+    ],
+    isWhitelisted,
+    whitelistOverridesAutomaticBlock: true,
+    requiresConfirmedFriendAddedEvent: true
   };
 }
 
