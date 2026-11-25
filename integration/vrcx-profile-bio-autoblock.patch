@@ -12,10 +12,7 @@ diff --git a/src/coordinators/userCoordinator.js b/src/coordinators/userCoordina
 -import { avatarRequest, instanceRequest, queryRequest, userRequest } from '../api';
 +import { avatarRequest, instanceRequest, playerModerationRequest, queryRequest, userRequest } from '../api';
  import { processBulk, request } from '../services/request';
-@@ -56,2 +56,12 @@
- import { useUserStore } from '../stores/user';
--import { useFeedStore } from '../stores/feed';
-+import { useFeedStore } from '../stores/feed';
+@@ -57,0 +58,10 @@
 +import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';
 +
 +const profileThreatGuard = createProfileThreatGuard({
