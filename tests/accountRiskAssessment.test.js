@@ -32,12 +32,11 @@ test("confirmed newly-added friend event triggers block", () => {
   assert.ok(result.blockReasons.includes("unexpected-friend-added-event"));
 });
 
-test("whitelist overrides automatic block", () => {
+test("explicit profile rule is not bypassed by a whitelist flag", () => {
   const result = assessAccountRisk({
     bio: "hexed.cc millions of ripped avatars to reupload in a single click",
-    friendAddedEvent: true,
     isWhitelisted: true
   });
-  assert.equal(result.automaticAction, "none");
-  assert.equal(result.isWhitelisted, true);
+  assert.equal(result.automaticAction, "block");
+  assert.equal(result.whitelistOverridesAutomaticBlock, false);
 });
