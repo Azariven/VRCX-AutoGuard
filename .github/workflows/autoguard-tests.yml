@@ -66,5 +66,5 @@ jobs:
         if: success()
         with:
           name: vrcx-autoguard-renderer-dist
-          path: vrcx-source/dist
+          path: vrcx-source/build/html
           if-no-files-found: error
