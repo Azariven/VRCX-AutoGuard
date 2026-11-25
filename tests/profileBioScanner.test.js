@@ -1,22 +1,21 @@
-import { describe, it, expect } from "vitest";
+import test from "node:test";
+import assert from "node:assert/strict";
 import { scanProfileBio } from "../src/autoguard/profileBioScanner.js";
 
-describe("scanProfileBio", () => {
-  it("flags hexed.cc ripped-avatar reupload promotion as high-risk review", () => {
-    const findings = scanProfileBio("BUY hexed.cc today, millions of ripped avatars to reupload in a single click");
-    expect(findings).toHaveLength(1);
-    expect(findings[0].id).toBe("hexed-ripped-avatar-promotion");
-    expect(findings[0].severity).toBe("high");
-    expect(findings[0].action).toBe("manual-review-only");
-    expect(findings[0].autoBlockEligible).toBe(false);
-  });
+test("hexed.cc profile promotion is an immediate block indicator", () => {
+  const findings = scanProfileBio("BUY hexed.cc today, millions of ripped avatars to reupload in a single click");
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].id, "hexed-avatar-ripping-promotion");
+  assert.equal(findings[0].action, "block");
+  assert.equal(findings[0].autoBlockEligible, true);
+});
 
-  it("flags oversee.lol stalking promotion separately", () => {
-    const findings = scanProfileBio("oversee.lol for free user stalking");
-    expect(findings.some(x => x.id === "oversee-user-stalking-promotion")).toBe(true);
-  });
+test("oversee.lol is an immediate block indicator", () => {
+  const findings = scanProfileBio("oversee.lol for free user stalking");
+  assert.ok(findings.some(x => x.id === "oversee-user-stalking-promotion"));
+  assert.ok(findings.every(x => x.action === "block"));
+});
 
-  it("does not flag unrelated profile text", () => {
-    expect(scanProfileBio("I enjoy photography and VRChat worlds")).toEqual([]);
-  });
+test("unrelated profile text is not flagged", () => {
+  assert.deepEqual(scanProfileBio("I enjoy photography and VRChat worlds"), []);
 });
