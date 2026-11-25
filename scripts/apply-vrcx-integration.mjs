@@ -158,8 +158,8 @@ await patchFile("src/components/nav-menu/navLayoutDefaults.js", [
 
 await patchFile("src/localization/zh-TW.json", [
   [
-    '        "search": "搜尋",',
-    '        "search": "搜尋",\n        "auto_guard": "AutoGuard 防護中心",',
+    '        "search": "搜尋",\n        "favorites": "收藏",',
+    '        "search": "搜尋",\n        "auto_guard": "AutoGuard 防護中心",\n        "favorites": "收藏",',
     "AutoGuard Traditional Chinese label"
   ]
 ]);
