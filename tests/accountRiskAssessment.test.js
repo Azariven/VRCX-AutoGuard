@@ -1,24 +1,27 @@
-import { describe, it, expect } from "vitest";
+import test from "node:test";
+import assert from "node:assert/strict";
 import { assessAccountRisk, detectProfileSignals } from "../src/autoguard/accountRiskAssessment.js";
 
-describe("explicit profile-domain blocking policy", () => {
-  it("blocks a bio containing hexed.cc even if wording changes", () => {
-    const result = assessAccountRisk({ bio: "BUY hexed.cc today, millions of ripped avatars to reupload in a single click" });
-    expect(result.automaticAction).toBe("block");
-    expect(result.profileSignals[0].domain).toBe("hexed.cc");
-  });
-  it("blocks a bio containing oversee.lol", () => {
-    const result = assessAccountRisk({ bio: "oversee.lol for free user stalking" });
-    expect(result.automaticAction).toBe("block");
-    expect(result.profileSignals[0].domain).toBe("oversee.lol");
-  });
-  it("matches case-insensitively and tolerates Unicode dot variants", () => {
-    expect(detectProfileSignals("HEXED．CC")).toHaveLength(1);
-  });
-  it("does not block a profile without either designated domain", () => {
-    expect(assessAccountRisk({ bio: "I enjoy VRChat photography" }).automaticAction).toBe("none");
-  });
-  it("does not block merely because a friend-add event occurred", () => {
-    expect(assessAccountRisk({ friendAddedEvent: true }).automaticAction).toBe("none");
-  });
+test("hexed.cc is a direct block indicator regardless of wording", () => {
+  const result = assessAccountRisk({ bio: "BUY hexed.cc today, millions of ripped avatars to reupload in a single click" });
+  assert.equal(result.automaticAction, "block");
+  assert.equal(result.profileSignals[0].domain, "hexed.cc");
+});
+
+test("oversee.lol is a direct block indicator", () => {
+  const result = assessAccountRisk({ bio: "oversee.lol for free user stalking" });
+  assert.equal(result.automaticAction, "block");
+  assert.equal(result.profileSignals[0].domain, "oversee.lol");
+});
+
+test("domain matching is case-insensitive and normalizes Unicode dots", () => {
+  assert.equal(detectProfileSignals("HEXED．CC").length, 1);
+});
+
+test("unrelated profile content does not trigger blocking", () => {
+  assert.equal(assessAccountRisk({ bio: "I enjoy VRChat photography" }).automaticAction, "none");
+});
+
+test("a friend-add event by itself does not trigger blocking", () => {
+  assert.equal(assessAccountRisk({ friendAddedEvent: true }).automaticAction, "none");
 });
