@@ -22,6 +22,14 @@ test("unrelated profile content does not trigger blocking", () => {
   assert.equal(assessAccountRisk({ bio: "I enjoy VRChat photography" }).automaticAction, "none");
 });
 
+test("lookalike hosts and suffix domains do not match the exact domain", () => {
+  assert.equal(detectProfileSignals("nothexed.cc and hexed.cc.evil").length, 0);
+});
+
+test("www-prefixed exact domains still match", () => {
+  assert.equal(detectProfileSignals("https://www.hexed.cc").length, 1);
+});
+
 test("a friend-add event by itself does not trigger blocking", () => {
   assert.equal(assessAccountRisk({ friendAddedEvent: true }).automaticAction, "none");
 });
