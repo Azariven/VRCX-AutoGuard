@@ -1,0 +1,113 @@
+# VRCX AutoGuard profile-bio auto-block integration
+# Target upstream: vrcx-team/VRCX @ e819c4e4ee13218393fcf8263e7745971dfc9821
+# Copy this repository's src/autoguard/ directory into the VRCX source tree first.
+# Apply with: git apply integration/vrcx-profile-bio-autoblock.patch
+# A Bio or Bio-link containing hexed.cc or oversee.lol triggers a direct block request.
+
+diff --git a/src/coordinators/userCoordinator.js b/src/coordinators/userCoordinator.js
+--- a/src/coordinators/userCoordinator.js
++++ b/src/coordinators/userCoordinator.js
+@@ -19,3 +19,3 @@
+ import { getUserMemo } from './memoCoordinator';
+-import { avatarRequest, instanceRequest, queryRequest, userRequest } from '../api';
++import { avatarRequest, instanceRequest, playerModerationRequest, queryRequest, userRequest } from '../api';
+ import { processBulk, request } from '../services/request';
+@@ -56,2 +56,12 @@
+ import { useUserStore } from '../stores/user';
+-import { useFeedStore } from '../stores/feed';
++import { useFeedStore } from '../stores/feed';
++import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';
++
++const profileThreatGuard = createProfileThreatGuard({
++    sendBlock: (userId) =>
++        playerModerationRequest.sendPlayerModeration({
++            moderated: userId,
++            type: 'block'
++        }),
++    onLog: (entry) => console.info('[VRCX AutoGuard]', entry)
++});
+@@ -65,3 +65,4 @@
+ export function applyPublicProfile(json) {
+-    const { cachedProfiles } = useUserStore();
++    const userStore = useUserStore();
++    const { cachedProfiles } = userStore;
+     let ref = cachedProfiles.get(json.id);
+@@ -92,5 +92,9 @@
+     }
+-    if (useFriendStore().friends.has(ref.id)) {
+-        updateUserProfile(ref);
+-    }
++    if (useFriendStore().friends.has(ref.id)) {
++        updateUserProfile(ref);
++    }
++    // Directly enforce the two designated profile-domain rules.
++    void profileThreatGuard.inspect(ref, userStore.currentUser.id).catch((error) => {
++        console.error('[VRCX AutoGuard] Profile scan failed:', error);
++    });
+     return ref;
+
+diff --git a/src/coordinators/friendRelationshipCoordinator.js b/src/coordinators/friendRelationshipCoordinator.js
+--- a/src/coordinators/friendRelationshipCoordinator.js
++++ b/src/coordinators/friendRelationshipCoordinator.js
+@@ -53,4 +53,8 @@
+  */
+-export function handleFriendAdd(args) {
+-    const friendStore = useFriendStore();
++export function handleFriendAdd(args) {
++    const friendStore = useFriendStore();
++    const userId = args.params.userId;
++    userRequest.getPublicProfile({ userId }).catch((error) => {
++        console.warn('[VRCX AutoGuard] Could not load new friend profile:', error);
++    });
+     addFriendship(args.params.userId);
+
+diff --git a/src/stores/notification/index.js b/src/stores/notification/index.js
+--- a/src/stores/notification/index.js
++++ b/src/stores/notification/index.js
+@@ -26,5 +26,6 @@
+     marketplaceRequest,
+-    notificationRequest,
+-    queryRequest
+-} from '../../api';
++    notificationRequest,
++    queryRequest,
++    userRequest
++} from '../../api';
+ import { VRCHAT_STORE_IDS } from '../../shared/constants';
+@@ -274,3 +274,8 @@
+     function handlePipelineNotification(args) {
+-        const ref = args.json;
++        const ref = args.json;
++        if (ref.type === 'friendRequest' && ref.senderUserId && ref.senderUserId !== userStore.currentUser.id) {
++            userRequest.getPublicProfile({ userId: ref.senderUserId }).catch((error) => {
++                console.warn('[VRCX AutoGuard] Could not load friend-request profile:', error);
++            });
++        }
+         if (ref.type === 'friendRequest' && generalSettingsStore.autoDeclineFriendRequests) {
+
+diff --git a/src/coordinators/gameLogCoordinator.js b/src/coordinators/gameLogCoordinator.js
+--- a/src/coordinators/gameLogCoordinator.js
++++ b/src/coordinators/gameLogCoordinator.js
+@@ -157,7 +157,17 @@
+     let userId = String(gameLog.userId || '');
+-    if (!userId && gameLog.displayName) {
+-        userId =
+-            findUserByDisplayName(userStore.cachedUsers, gameLog.displayName, userStore.cachedUserIdsByDisplayName)
+-                ?.id ?? '';
+-    }
++    if (!userId && gameLog.displayName) {
++        userId =
++            findUserByDisplayName(userStore.cachedUsers, gameLog.displayName, userStore.cachedUserIdsByDisplayName)
++                ?.id ?? '';
++    }
++    if (
++        gameLog.type === 'player-joined' &&
++        userId &&
++        userId !== userStore.currentUser.id &&
++        !userStore.cachedProfiles.has(userId)
++    ) {
++        userRequest.getPublicProfile({ userId }).catch((error) => {
++            console.warn('[VRCX AutoGuard] Could not load joining player profile:', error);
++        });
++    }
+     switch (gameLog.type) {
