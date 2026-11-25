@@ -11,7 +11,7 @@ function normalizeText(value) {
 
 function domainPattern(domain) {
   const escaped = domain.replace(".", "\\.");
-  return new RegExp("(?:^|[^a-z0-9-])(?:www\\\\.)?" + escaped + "(?=$|[^a-z0-9-])", "i");
+  return new RegExp("(?:^|[^a-z0-9-])(?:www\\.)?" + escaped + "(?=$|[^a-z0-9-])", "i");
 }
 
 export function detectProfileSignals(profileText) {
