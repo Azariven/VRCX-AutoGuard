@@ -20,10 +20,11 @@ A newly-added friend or an existing friend-list entry alone does not trigger blo
 - src/autoguard/accountRiskAssessment.js — exact domain classification.
 - data/known-users.json — candidate User ID watchlist; IDs are format-validated, not independently verified.
 - integration/vrcx-profile-bio-autoblock.patch — VRCX integration patch.
+- scripts/apply-vrcx-integration.mjs — cross-platform source integration helper.
 - tests/ — automated tests.
 
 ## Integration status
 
-The integration patch targets upstream VRCX commit e819c4e4ee13218393fcf8263e7745971dfc9821. It still needs to be applied to a matching VRCX checkout, then built and runtime-tested. A GitHub commit of this module alone is not a compiled VRCX application.
+The integration targets upstream VRCX commit e819c4e4ee13218393fcf8263e7745971dfc9821. GitHub Actions validates the patch, compares typecheck diagnostics with upstream, builds the renderer, and attempts a Windows NSIS installer build. Runtime testing inside VRChat is still required. CI artifacts are available from the Actions run; a renderer artifact is not a full installer.
 
 See docs/INTEGRATION.md for application and validation steps.
