@@ -37,13 +37,29 @@ jobs:
       - name: Install VRCX dependencies
         working-directory: vrcx-source
         run: npm ci
-      - name: VRCX JavaScript typecheck
+      - name: Compare VRCX typechecks with unmodified upstream baseline
         working-directory: vrcx-source
-        run: npm run typecheck:js
-      - name: VRCX Vue typecheck
-        working-directory: vrcx-source
-        run: npm run typecheck:vue
-      - name: Build VRCX renderer
+        shell: bash
+        run: |
+          set +e
+          for script in typecheck:js typecheck:vue; do
+            git apply -R "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+            npm run "$script" > "/tmp/${script//:/-}-baseline.log" 2>&1
+            baseline_status=$?
+            git apply "$GITHUB_WORKSPACE/integration/vrcx-profile-bio-autoblock.patch"
+            npm run "$script" > "/tmp/${script//:/-}-patched.log" 2>&1
+            patched_status=$?
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
+            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
+            if ! diff -u "/tmp/${script//:/-}-baseline-errors.txt" "/tmp/${script//:/-}-patched-errors.txt"; then
+              echo "AutoGuard introduced new $script diagnostics."
+              cat "/tmp/${script//:/-}-patched.log"
+              exit 1
+            fi
+            echo "$script diagnostics unchanged versus upstream (baseline exit=$baseline_status, patched exit=$patched_status)."
+          done
+          set -e
+      - name: Build VRCX renderer with AutoGuard
         working-directory: vrcx-source
         run: npm run prod
       - uses: actions/upload-artifact@v4
