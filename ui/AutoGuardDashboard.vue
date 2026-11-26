@@ -43,9 +43,9 @@ onMounted(() => { void initAutoGuardStore(); });
         <input type="checkbox" :checked="state.friendReviewSettings?.autoBlockEnabled === true"
           @change="setAutoGuardFriendReviewSettings({ autoBlockEnabled: $event.target.checked })">
       </label>
-      <label class="rule"><span>邀請訊息範本 Slot（1–10）<small>請先在 VRCX 邀請訊息設定中建立指定警告文字，再填入對應 Slot</small></span>
-        <input type="number" min="1" max="10" :value="state.friendReviewSettings?.inviteMessageSlot ?? ''"
-          @change="setAutoGuardFriendReviewSettings({ inviteMessageSlot: $event.target.value === '' ? null : Math.max(1, Math.min(10, Number($event.target.value))) })">
+      <label class="rule"><span>邀請訊息範本 Slot（0–10）<small>請先在 VRCX 邀請訊息設定中建立指定警告文字，再填入對應 Slot</small></span>
+        <input type="number" min="0" max="10" :value="state.friendReviewSettings?.inviteMessageSlot ?? ''"
+          @change="setAutoGuardFriendReviewSettings({ inviteMessageSlot: $event.target.value === '' ? null : Math.max(0, Math.min(10, Number($event.target.value))) })">
       </label>
       <p class="empty">若無法取得目前房間，或邀請訊息傳送失敗，系統不得假裝已通知；不會在未送出通知時執行封鎖。</p>
     </section>
