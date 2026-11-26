@@ -42,15 +42,6 @@ await patchFile("src/coordinators/userCoordinator.js", [
     "    const userStore = useUserStore();\n    const { cachedProfiles } = userStore;",
     "profile store reference"
   ],
-  [
-    "    if (useFriendStore().friends.has(ref.id)) {\n        updateUserProfile(ref);\n    }",
-    "    if (useFriendStore().friends.has(ref.id)) {\n        updateUserProfile(ref);\n    }\n" +
-    "    // Directly enforce the two designated profile-domain rules.\n" +
-    "    void profileThreatGuard.inspect(ref, userStore.currentUser.id).catch((error) => {\n" +
-    "        console.error('[VRCX AutoGuard] Profile scan failed:', error);\n" +
-    "    });",
-    "public profile scan hook"
-  ]
 ]);
 
 await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
