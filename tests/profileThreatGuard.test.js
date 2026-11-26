@@ -36,3 +36,24 @@ test("deduplicates repeated profile loads", async () => {
   assert.equal(calls, 1);
   assert.equal(result.action, "already-blocked");
 });
+
+test("does not block a whitelisted account even when its profile matches a domain", async () => {
+  let calls = 0;
+  const guard = createProfileThreatGuard({
+    sendBlock: async () => { calls++; return { ok: true }; },
+    isWhitelisted: userId => userId === id
+  });
+  const result = await guard.inspect({ id, bio: "hexed.cc" }, "", { source: "group-invite" });
+  assert.equal(result.action, "whitelisted");
+  assert.equal(calls, 0);
+});
+
+test("records the social event source when a profile is inspected", async () => {
+  const entries = [];
+  const guard = createProfileThreatGuard({
+    sendBlock: async () => ({ ok: true }),
+    onLog: entry => entries.push(entry)
+  });
+  await guard.inspect({ id, bio: "ordinary profile" }, "", { source: "group-recommendation", eventId: "event-42" });
+  assert.equal(entries.at(-1).source, "group-recommendation");
+});
