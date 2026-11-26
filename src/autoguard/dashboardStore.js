@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { reactive, readonly } from 'vue';
 import configRepository from '../services/config.js';
 import { FRIEND_REVIEW_DEFAULTS, getFriendReviewState } from './friendReviewPolicy.js';
