@@ -15,6 +15,13 @@ const eventLabel = event => ({
 }[event.action] || event.action || '事件');
 const eventClass = event => event.action === 'blocked' ? 'success' : event.action === 'error' ? 'danger' : 'muted';
 const formatTime = value => value ? new Date(value).toLocaleString() : '';
+const onToggleEnabled = event => setAutoGuardEnabled(!!event.currentTarget?.checked);
+const onToggleRule = (domain, event) => setAutoGuardRule(domain, !!event.currentTarget?.checked);
+const onToggleReview = event => setAutoGuardFriendReviewSettings({ autoBlockEnabled: !!event.currentTarget?.checked });
+const onInviteSlotChange = event => {
+  const value = event.currentTarget?.value ?? '';
+  setAutoGuardFriendReviewSettings({ inviteMessageSlot: value === '' ? null : Math.max(0, Math.min(10, Number(value))) });
+};
 onMounted(() => { void initAutoGuardStore(); });
 </script>
 
@@ -22,7 +29,7 @@ onMounted(() => { void initAutoGuardStore(); });
   <section class="autoguard">
     <header class="autoguard__header">
       <div><h2>AutoGuard 防護中心</h2><p>以目前所在世界為掃描核心；不掃描不在房間內的好友</p></div>
-      <label class="toggle"><input type="checkbox" :checked="state.enabled" @change="setAutoGuardEnabled($event.target.checked)"><span>{{ statusText }}</span></label>
+      <label class="toggle"><input type="checkbox" :checked="state.enabled" @change="onToggleEnabled"><span>{{ statusText }}</span></label>
     </header>
     <div class="autoguard__stats">
       <article><strong>{{ state.scannedCount }}</strong><span>掃描次數</span></article>
@@ -33,19 +40,19 @@ onMounted(() => { void initAutoGuardStore(); });
       <h3>自動封鎖規則</h3>
       <label v-for="domain in ['hexed.cc', 'oversee.lol']" :key="domain" class="rule">
         <span><code>{{ domain }}</code><small>Bio 或 Bio Links 命中時封鎖</small></span>
-        <input type="checkbox" :checked="state.rules[domain]" @change="setAutoGuardRule(domain, $event.target.checked)">
+        <input type="checkbox" :checked="state.rules[domain]" @change="onToggleRule(domain, $event)">
       </label>
     </section>
     <section class="autoguard__rules">
       <h3>新好友逾時審核</h3>
       <p>新增好友滿 30 分鐘提醒；提醒後再給你 5 分鐘確認。自動封鎖預設關閉。</p>
       <label class="rule"><span>啟用逾時自動封鎖（需先設定邀請訊息範本）</span>
-        <input type="checkbox" :checked="state.friendReviewSettings?.autoBlockEnabled === true"
-          @change="setAutoGuardFriendReviewSettings({ autoBlockEnabled: $event.target.checked })">
+        <input type="checkbox"  :checked="Boolean(state.friendReviewSettings?.autoBlockEnabled)"
+          @change="onToggleReview">
       </label>
       <label class="rule"><span>邀請訊息範本 Slot（0–10）<small>請先在 VRCX 邀請訊息設定中建立指定警告文字，再填入對應 Slot</small></span>
         <input type="number" min="0" max="10" :value="state.friendReviewSettings?.inviteMessageSlot ?? ''"
-          @change="setAutoGuardFriendReviewSettings({ inviteMessageSlot: $event.target.value === '' ? null : Math.max(0, Math.min(10, Number($event.target.value))) })">
+          @change="onInviteSlotChange">
       </label>
       <p class="empty">若無法取得目前房間，或邀請訊息傳送失敗，系統不得假裝已通知；不會在未送出通知時執行封鎖。</p>
     </section>
