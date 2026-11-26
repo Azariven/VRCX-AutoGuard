@@ -54,7 +54,7 @@ onMounted(() => { void initAutoGuardStore(); });
       <p v-if="!state.pendingFriends.length" class="empty">目前沒有待審核的新好友。</p>
       <ol v-else><li v-for="item in state.pendingFriends" :key="item.userId">
         <div><strong>{{ item.displayName || item.userId }}</strong><span>{{ item.userId }} · 新增來源：{{ item.source === 'unknown' ? '未知' : item.source }}</span><time>{{ formatTime(item.timestamp) }}</time></div>
-        <div class="actions"><button @click="addAutoGuardWhitelist(item.userId)">確認安全並加入白名單</button><button class="remove" @click="dismissAutoGuardPendingFriend(item.userId)">暫不加入</button></div>
+        <div class="actions"><button @click="addAutoGuardWhitelist(item.userId)">確認是我手動新增（加入白名單）</button><button class="remove" @click="dismissAutoGuardPendingFriend(item.userId)">暫不加入</button></div>
       </li></ol>
     </section>
     <section class="autoguard__activity">
