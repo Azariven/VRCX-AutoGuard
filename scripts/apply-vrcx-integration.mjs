@@ -78,6 +78,19 @@ await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
   ]
 ]);
 
+await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
+  [
+    "import { watchState } from '../services/watchState';",
+    "import { watchState } from '../services/watchState';\nimport { startAutoGuardFriendReviewRuntime } from '../autoguard/friendReviewRuntime.js';",
+    "friend review runtime import"
+  ],
+  [
+    "export function handleFriendAdd(args) {\n    const friendStore = useFriendStore();",
+    "export function handleFriendAdd(args) {\n    startAutoGuardFriendReviewRuntime();\n    const friendStore = useFriendStore();",
+    "start timed friend review runtime"
+  ]
+]);
+
 await patchFile("src/stores/notification/index.js", [
   [
     "    notificationRequest,\n    queryRequest\n} from '../../api';",
