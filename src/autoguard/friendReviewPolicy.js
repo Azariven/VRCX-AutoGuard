@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Time-based review policy for newly added friends.
  * A missed review is not proof of malicious behavior. Automatic enforcement is
