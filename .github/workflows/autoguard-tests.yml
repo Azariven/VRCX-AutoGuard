@@ -126,3 +126,122 @@ jobs:
           name: vrcx-autoguard-windows-installer
           path: vrcx-source/build/*.exe
           if-no-files-found: error
+
+  publish-release:
+    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: publish Build 90')
+    needs: [unit-tests, vrcx-integration, vrcx-windows-app]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: preview-2026.11.26-build90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: vrcx-autoguard-windows-installer
+          path: release-assets/download
+      - name: Assemble complete release package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $installers = @(Get-ChildItem -Path "release-assets/download" -Filter "*.exe" -File)
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one Windows installer, found $($installers.Count)."
+          }
+
+          $installerName = "VRCX-AutoGuard-Setup-Windows-x64.exe"
+          $installerPath = "release-assets/$installerName"
+          Copy-Item $installers[0].FullName $installerPath -Force
+
+          $sourceZip = "release-assets/VRCX-AutoGuard-Source.zip"
+          git archive --format=zip --output=$sourceZip $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0 -or !(Test-Path $sourceZip)) {
+            throw "Could not create the source archive."
+          }
+
+          $readme = @"
+          # VRCX AutoGuard Preview Build 90
+
+          - Date: 2026-11-26
+          - Platform: Windows x64
+          - Source commit: $env:GITHUB_SHA
+          - Upstream VRCX commit: e819c4e4ee13218393fcf8263e7745971dfc9821
+
+          ## Install
+          1. Close all running VRCX processes.
+          2. Run VRCX-AutoGuard-Setup-Windows-x64.exe.
+          3. Complete setup and launch VRCX AutoGuard.
+          4. Review domain rules, whitelist entries, and automatic-block settings before enabling automated actions.
+
+          ## Package contents
+          - Windows x64 installer
+          - Complete tracked source archive
+          - SHA256SUMS.txt
+
+          ## Validation and limitations
+          The release workflow requires successful AutoGuard unit tests, VRCX renderer integration, Windows .NET 10 build, renderer build, and installer packaging. This does not certify live VRChat behavior. The current-world scanner and social-notification handling still require in-client validation. A configured profile-domain match is not proof of malicious activity; start with manual review.
+
+          ## Project status
+          Free, unofficial community-modified VRCX build with integrated AutoGuard. Not a VRCX Team product, plugin, endorsement, or supported release.
+          "@
+          Set-Content -Path "release-assets/README-Install.md" -Value $readme -Encoding utf8
+
+          $hashLines = @()
+          foreach ($file in @($installerPath, $sourceZip)) {
+            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            $hashLines += "$hash  $(Split-Path $file -Leaf)"
+          }
+          Set-Content -Path "release-assets/SHA256SUMS.txt" -Value $hashLines -Encoding ascii
+
+          $packageZip = "release-assets/VRCX-AutoGuard-Windows-x64-Full-Package.zip"
+          Compress-Archive -Path $installerPath, $sourceZip, "release-assets/README-Install.md", "release-assets/SHA256SUMS.txt" -DestinationPath $packageZip -Force
+
+          $packageHash = (Get-FileHash -Path $packageZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "release-assets/FULL-PACKAGE-SHA256.txt" -Value "$packageHash  $(Split-Path $packageZip -Leaf)" -Encoding ascii
+
+          $notes = @"
+          ## VRCX AutoGuard Preview Build 90
+
+          Free, unofficial Windows x64 VRCX build with the integrated AutoGuard module.
+
+          Source commit: $env:GITHUB_SHA
+          Upstream VRCX: e819c4e4ee13218393fcf8263e7745971dfc9821
+
+          ### Assets
+          - VRCX-AutoGuard-Setup-Windows-x64.exe: Windows x64 installer
+          - VRCX-AutoGuard-Windows-x64-Full-Package.zip: installer, source archive, install guide, and checksums
+          - VRCX-AutoGuard-Source.zip: complete tracked source
+          - SHA256SUMS.txt and FULL-PACKAGE-SHA256.txt: integrity checks
+
+          ### CI checks
+          AutoGuard unit tests, Linux VRCX renderer integration/build, Windows .NET 10 core build, Windows renderer build, and Windows installer packaging must all succeed before this release is created.
+
+          ### Important limitations
+          CI success does not prove live VRChat behavior. Current-world scanning and social-event handling require in-client validation. Domain matches are configurable indicators, not proof of malicious behavior. Review rules and whitelist entries before enabling automatic blocking.
+
+          This is an unofficial community-modified VRCX build. It is not created, endorsed, or maintained by VRCX Team.
+          "@
+          Set-Content -Path "release-assets/RELEASE-NOTES.md" -Value $notes -Encoding utf8
+      - name: Publish GitHub Release
+        shell: pwsh
+        run: |
+          $releaseAssets = @(
+            "release-assets/VRCX-AutoGuard-Setup-Windows-x64.exe",
+            "release-assets/VRCX-AutoGuard-Windows-x64-Full-Package.zip",
+            "release-assets/VRCX-AutoGuard-Source.zip",
+            "release-assets/SHA256SUMS.txt",
+            "release-assets/FULL-PACKAGE-SHA256.txt"
+          )
+          $ghArgs = @("release", "create", $env:RELEASE_TAG) + $releaseAssets + @(
+            "--target", $env:GITHUB_SHA,
+            "--title", "VRCX AutoGuard Preview Build 90",
+            "--notes-file", "release-assets/RELEASE-NOTES.md",
+            "--prerelease"
+          )
+          & gh @ghArgs
+          if ($LASTEXITCODE -ne 0) {
+            throw "GitHub Release creation failed."
+          }
