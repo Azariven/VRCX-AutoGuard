@@ -26,7 +26,7 @@ jobs:
       - name: Copy AutoGuard modules and validate patch
         run: |
           mkdir -p vrcx-source/src/autoguard
-          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js src/autoguard/dashboardStore.js vrcx-source/src/autoguard/
+          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js src/autoguard/dashboardStore.js src/autoguard/worldFocusedScanner.js src/autoguard/friendReviewPolicy.js vrcx-source/src/autoguard/
           mkdir -p vrcx-source/src/views/AutoGuard
           cp ui/AutoGuardDashboard.vue vrcx-source/src/views/AutoGuard/AutoGuard.vue
           node scripts/apply-vrcx-integration.mjs vrcx-source
@@ -86,7 +86,7 @@ jobs:
           git -C vrcx-source config core.autocrlf false
           git -C vrcx-source reset --hard HEAD
           New-Item -ItemType Directory -Force vrcx-source/src/autoguard | Out-Null
-          Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js, src/autoguard/dashboardStore.js -Destination vrcx-source/src/autoguard/
+          Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js, src/autoguard/dashboardStore.js, src/autoguard/worldFocusedScanner.js, src/autoguard/friendReviewPolicy.js -Destination vrcx-source/src/autoguard/
           New-Item -ItemType Directory -Force vrcx-source/src/views/AutoGuard | Out-Null
           Copy-Item ui/AutoGuardDashboard.vue -Destination vrcx-source/src/views/AutoGuard/AutoGuard.vue
           node scripts/apply-vrcx-integration.mjs vrcx-source
