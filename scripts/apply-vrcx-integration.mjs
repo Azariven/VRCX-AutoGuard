@@ -80,6 +80,14 @@ await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
 
 await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
   [
+    "import { storeToRefs } from 'pinia';",
+    "import { storeToRefs } from 'pinia';\n\nstartAutoGuardFriendReviewRuntime();",
+    "start friend review runtime after imports"
+  ]
+]);
+
+await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
+  [
     "import { watchState } from '../services/watchState';",
     "import { watchState } from '../services/watchState';\nimport { startAutoGuardFriendReviewRuntime } from '../autoguard/friendReviewRuntime.js';",
     "friend review runtime import"
