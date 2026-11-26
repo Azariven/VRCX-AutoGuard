@@ -40,3 +40,19 @@ test('recent friend-added timestamp is recognized only when the friend enters th
   await scanner.playerJoined({ userId, timestamp: 2000 });
   assert.deepEqual(reasons, ['recent-friend-in-world']);
 });
+
+test('scans a newly joined non-friend in the active room exactly once', async () => {
+  const calls = [];
+  const scanner = createWorldFocusedScanner({
+    getProfile: userId => ({ id: userId, bio: '' }),
+    inspectProfile: async profile => {
+      calls.push(profile.id);
+      return { action: 'no-match' };
+    }
+  });
+  scanner.enterWorld({ currentLocation: 'wrld_test:public', currentUserId: id(99) });
+  // No friend-added timestamp is registered: this is an ordinary room visitor.
+  await scanner.playerJoined({ userId: id(4), timestamp: 3000 });
+  await scanner.playerJoined({ userId: id(4), timestamp: 4000 });
+  assert.deepEqual(calls, [id(4)]);
+});
