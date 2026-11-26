@@ -34,7 +34,17 @@ await patchFile("src/coordinators/userCoordinator.js", [
     "            type: 'block'\n" +
     "        }),\n" +
     "    onLog: (entry) => console.info('[VRCX AutoGuard]', entry)\n" +
-    "});",
+    "});\n\n" +
+    "export async function inspectAutoGuardProfile(candidate = {}) {\n" +
+    "    const userStore = useUserStore();\n" +
+    "    const userId = String(candidate.userId || '');\n" +
+    "    if (!userId || userId === userStore.currentUser.id) return { action: 'ignore' };\n" +
+    "    await initAutoGuardStore();\n" +
+    "    if (!useAutoGuardDashboardState().enabled) return { action: 'disabled' };\n" +
+    "    if (getAutoGuardWhitelist().includes(userId)) return { action: 'whitelisted', userId };\n" +
+    "    const result = await userRequest.getPublicProfile({ userId });\n" +
+    "    return profileThreatGuard.inspect(result.ref, userStore.currentUser.id, candidate);\n" +
+    "}",
     "profile guard singleton"
   ],
   [
@@ -92,19 +102,22 @@ await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
 
 await patchFile("src/stores/notification/index.js", [
   [
-    "    notificationRequest,\n    queryRequest\n} from '../../api';",
-    "    notificationRequest,\n    queryRequest,\n    userRequest\n} from '../../api';",
-    "friend request profile API import"
+    "import configRepository from '../../services/config';",
+    "import configRepository from '../../services/config';\n" +
+    "import { getSocialSignalCandidate } from '../../autoguard/socialSignalPolicy.js';\n" +
+    "import { inspectAutoGuardProfile } from '../../coordinators/userCoordinator';",
+    "social notification profile review imports"
   ],
   [
     "    function handlePipelineNotification(args) {\n        const ref = args.json;",
     "    function handlePipelineNotification(args) {\n        const ref = args.json;\n" +
-    "        if (ref.type === 'friendRequest' && ref.senderUserId && ref.senderUserId !== userStore.currentUser.id) {\n" +
-    "            userRequest.getPublicProfile({ userId: ref.senderUserId }).catch((error) => {\n" +
-    "                console.warn('[VRCX AutoGuard] Could not load friend-request profile:', error);\n" +
+    "        const socialCandidate = getSocialSignalCandidate(ref, userStore.currentUser.id);\n" +
+    "        if (socialCandidate) {\n" +
+    "            inspectAutoGuardProfile(socialCandidate).catch((error) => {\n" +
+    "                console.warn('[VRCX AutoGuard] Could not inspect social-event sender profile:', error);\n" +
     "            });\n" +
     "        }",
-    "live friend request profile fetch"
+    "inspect friend and group notification senders"
   ]
 ]);
 
@@ -139,7 +152,7 @@ await patchFile("src/coordinators/userCoordinator.js", [
   [
     "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';",
     "import { createProfileThreatGuard } from '../autoguard/profileThreatGuard.js';\n" +
-    "import { getEnabledAutoGuardDomains, initAutoGuardStore, recordAutoGuardEvent, recordAutoGuardScan, useAutoGuardDashboardState } from '../autoguard/dashboardStore.js';",
+    "import { getAutoGuardWhitelist, getEnabledAutoGuardDomains, initAutoGuardStore, recordAutoGuardEvent, recordAutoGuardScan, useAutoGuardDashboardState } from '../autoguard/dashboardStore.js';",
     "dashboard store imports"
   ],
   [
@@ -147,7 +160,9 @@ await patchFile("src/coordinators/userCoordinator.js", [
     "    onLog: (entry) => recordAutoGuardEvent(entry),\n" +
     "    onScan: (entry) => recordAutoGuardScan(entry),\n" +
     "    isEnabled: () => useAutoGuardDashboardState().enabled,\n" +
-    "    getEnabledDomains: getEnabledAutoGuardDomains,\n    ensureReady: initAutoGuardStore",
+    "    getEnabledDomains: getEnabledAutoGuardDomains,\n" +
+    "    ensureReady: initAutoGuardStore,\n" +
+    "    isWhitelisted: (userId) => getAutoGuardWhitelist().includes(userId)",
     "dashboard event and settings wiring"
   ]
 ]);
