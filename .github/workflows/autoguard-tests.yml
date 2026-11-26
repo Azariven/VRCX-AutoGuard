@@ -26,7 +26,7 @@ jobs:
       - name: Copy AutoGuard modules and validate patch
         run: |
           mkdir -p vrcx-source/src/autoguard
-          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js src/autoguard/dashboardStore.js src/autoguard/worldFocusedScanner.js src/autoguard/friendReviewPolicy.js src/autoguard/friendReviewRuntime.js vrcx-source/src/autoguard/
+          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js src/autoguard/dashboardStore.js src/autoguard/worldFocusedScanner.js src/autoguard/friendReviewPolicy.js src/autoguard/friendReviewRuntime.js src/autoguard/socialSignalPolicy.js vrcx-source/src/autoguard/
           mkdir -p vrcx-source/src/views/AutoGuard
           cp ui/AutoGuardDashboard.vue vrcx-source/src/views/AutoGuard/AutoGuard.vue
           node scripts/apply-vrcx-integration.mjs vrcx-source
