@@ -9,7 +9,8 @@ test("recognizes friend requests and group invitations with a sender", () => {
   for (const [type, source] of [
     ["friendRequest", "friend-request"],
     ["group.invite", "group-invite"],
-    ["group.joinRequest", "group-join-request"]
+    ["group.joinRequest", "group-join-request"],
+    ["group.informative", "group-recommendation"]
   ]) {
     const result = getSocialSignalCandidate({ type, senderUserId: sender, id: "event-1", senderUsername: "Player" }, current);
     assert.equal(result.userId, sender);
@@ -19,7 +20,7 @@ test("recognizes friend requests and group invitations with a sender", () => {
 });
 
 test("ignores system notifications and unsupported notification types", () => {
-  assert.equal(getSocialSignalCandidate({ type: "group.informative", senderUserId: sender }, current), null);
+  assert.equal(getSocialSignalCandidate({ type: "group.informative" }, current), null);
   assert.equal(getSocialSignalCandidate({ type: "group.invite" }, current), null);
 });
 
