@@ -161,6 +161,60 @@ The goal is not to claim that every bot can be detected, or to exploit VRChat or
 
 ---
 
+## 官方關係、免費性質與免責聲明 / Official Relationship, Free Software & Disclaimer
+
+### 繁體中文
+
+**VRCX AutoGuard 為非官方、社群自製的免費 MOD／擴充整合專案，並非 VRCX 官方產品，也不是 VRCX 原作者或開發團隊所製作、核准、背書或維護。**
+
+VRCX 本體由 **VRCX Team** 維護，是一款用於 VRChat 的第三方輔助應用程式。本專案是在 VRCX 開放原始碼基礎上，額外加入 AutoGuard 防護功能的社群修改版本；並非 VRCX 官方發布版本。請參閱原專案與作者團隊：
+
+- VRCX 官方網站／專案頁：[https://github.com/vrcx-team/VRCX](https://github.com/vrcx-team/VRCX)
+- VRCX Team（原作者／維護團隊）：[https://github.com/vrcx-team](https://github.com/vrcx-team)
+- VRCX 官方發布版本：[https://github.com/vrcx-team/VRCX/releases](https://github.com/vrcx-team/VRCX/releases)
+
+**本專案完全免費提供。** 不收取下載費、使用費或訂閱費。若未來出現任何第三方收費散布或非官方修改版本，均不代表本專案作者授權或認可。
+
+AutoGuard 的目的，是透過 VRCX 可取得的公開個人檔案資訊與房間事件，協助使用者辨識特定風險指標，降低疑似模型盜用宣傳帳號與騷擾帳號對個人及社群造成的困擾。它不是萬能防護工具，也不保證能阻止所有盜用、機器人、外掛或騷擾行為。
+
+**封鎖功能與使用風險**
+- AutoGuard 可依使用者啟用的規則，自動向 VRChat 發送封鎖請求。規則比對可能有誤判，包含正常使用者被誤封鎖的可能。
+- 自動封鎖可能造成好友關係中斷、誤會、爭執、社群衝突或其他社交後果。即使是使用者自行設定的規則，也請先理解其判斷方式與影響。
+- 使用者應自行檢查封鎖規則、白名單、待確認清單與活動紀錄，並自行決定是否啟用自動封鎖。建議先以人工審核模式觀察，再考慮開啟自動處理。
+- 使用者須自行確認使用本專案是否符合所在地法律、VRChat 使用條款、平台政策及自身所處社群規範。若有疑慮，請勿使用自動封鎖功能。
+
+**責任聲明**
+本專案依「現狀」提供，不附帶任何明示或默示保證，包括但不限於準確性、可靠性、不中斷運作、適用特定用途或不侵害第三方權利。於適用法律允許的最大範圍內，專案作者與貢獻者不對因下載、安裝、設定、使用、無法使用或散布本專案所造成的直接、間接、附帶、特殊、衍生損害、資料損失、帳號或社交關係影響、封鎖爭議、平台處分、法律爭議或其他後果負責。
+
+本聲明不表示使用者可以免除自身依法應負的責任，也不排除任何依法不得排除或限制的責任。使用者需自行承擔使用本軟體的風險，並對自己的封鎖決策及其後果負責。若不同意上述條款，請勿下載或使用本專案。
+
+### English
+
+**VRCX AutoGuard is an unofficial, community-made, free MOD / extension integration. It is not an official VRCX product, and it is not created, approved, endorsed, or maintained by the original VRCX author(s) or development team.**
+
+The original VRCX application is maintained by **VRCX Team** and is a third-party companion application for VRChat. This project adds AutoGuard protection features on top of the open-source VRCX codebase. It is a community-modified build, not an official VRCX release. Please refer to the original project and its maintainers:
+
+- VRCX official project page: [https://github.com/vrcx-team/VRCX](https://github.com/vrcx-team/VRCX)
+- VRCX Team (original authors / maintainers): [https://github.com/vrcx-team](https://github.com/vrcx-team)
+- Official VRCX releases: [https://github.com/vrcx-team/VRCX/releases](https://github.com/vrcx-team/VRCX/releases)
+
+**This project is provided completely free of charge.** There are no download fees, usage fees, or subscription fees. Any third-party paid distribution or unofficial modified build does not imply authorization or endorsement by this project's author.
+
+AutoGuard aims to help users identify selected risk indicators through public profile information and room events available to VRCX, in order to reduce unwanted exposure to suspected avatar-ripping promotions and harassment. It is not a complete security solution and cannot guarantee protection against every form of avatar theft, bot activity, modified client, or harassment.
+
+**Blocking Features and Risks**
+- Based on rules enabled by the user, AutoGuard can automatically submit block requests to VRChat. Rule matching can be inaccurate, and legitimate users may be blocked by mistake.
+- Automatic blocking may interrupt friendships and lead to misunderstandings, arguments, community conflicts, or other social consequences. This remains possible even when users configure the rules themselves.
+- Users are responsible for reviewing blocking rules, whitelists, pending approvals, and activity logs, and for deciding whether to enable automatic blocking. It is recommended to start with manual review before enabling automated actions.
+- Users must independently determine whether using this project complies with applicable local laws, VRChat's Terms of Service, platform policies, and their community rules. Do not use automatic blocking if you are unsure.
+
+**Disclaimer of Liability**
+This project is provided **"AS IS"**, without warranties of any kind, express or implied, including but not limited to accuracy, reliability, uninterrupted operation, fitness for a particular purpose, or non-infringement. To the maximum extent permitted by applicable law, the project author and contributors shall not be liable for direct, indirect, incidental, special, consequential, data-related, account-related, social, blocking-related, platform enforcement, legal, or other consequences arising from downloading, installing, configuring, using, being unable to use, or distributing this project.
+
+Nothing in this disclaimer releases users from legal responsibilities imposed on them by applicable law, or excludes or limits liability that cannot legally be excluded or limited. Users assume the risks of using this software and remain responsible for their own blocking decisions and their consequences. Do not download or use this project if you do not agree with these terms.
+
+---
+
 ## Development
 
 See [docs/INTEGRATION.md](docs/INTEGRATION.md) for integration and validation steps.
