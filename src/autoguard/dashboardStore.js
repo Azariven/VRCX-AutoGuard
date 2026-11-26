@@ -1,5 +1,6 @@
 import { reactive, readonly } from 'vue';
 import configRepository from '../services/config.js';
+import { FRIEND_REVIEW_DEFAULTS, getFriendReviewState } from './friendReviewPolicy.js';
 
 const CONFIG_KEY = 'VRCX_autoGuardConfig';
 const state = reactive({
@@ -8,6 +9,7 @@ const state = reactive({
   whitelist: [],
   pendingApprovals: [],
   pendingFriends: [],
+  friendReviewSettings: { ...FRIEND_REVIEW_DEFAULTS },
   events: [],
   scannedCount: 0,
   blockedCount: 0,
@@ -16,7 +18,7 @@ const state = reactive({
 });
 
 function snapshot() {
-  return { enabled: state.enabled, rules: { ...state.rules }, whitelist: [...state.whitelist], pendingFriends: [...state.pendingFriends] };
+  return { enabled: state.enabled, rules: { ...state.rules }, whitelist: [...state.whitelist], pendingFriends: [...state.pendingFriends], friendReviewSettings: { ...state.friendReviewSettings } };
 }
 export async function initAutoGuardStore() {
   if (state.initialized) return;
@@ -30,6 +32,10 @@ export async function initAutoGuardStore() {
       }
       if (Array.isArray(saved.whitelist)) state.whitelist = [...new Set(saved.whitelist.filter(x => typeof x === 'string'))];
       if (Array.isArray(saved.pendingFriends)) state.pendingFriends = saved.pendingFriends.filter(x => x && typeof x.userId === 'string');
+      if (saved.friendReviewSettings && typeof saved.friendReviewSettings === 'object') {
+        state.friendReviewSettings = { ...FRIEND_REVIEW_DEFAULTS, ...saved.friendReviewSettings,
+          autoBlockEnabled: saved.friendReviewSettings.autoBlockEnabled === true };
+      }
     }
   } catch (error) { console.warn('[VRCX AutoGuard] Could not load settings:', error); }
   state.initialized = true;
@@ -62,12 +68,42 @@ export function recordAutoGuardPendingFriend(friend = {}) {
   state.pendingFriends.unshift({
     userId, displayName: String(friend.displayName || ''),
     timestamp: friend.timestamp || new Date().toISOString(),
-    source: friend.source || 'unknown'
+    source: friend.source || 'unknown', status: 'pending', reminderSent: false
   });
   if (state.pendingFriends.length > 200) state.pendingFriends.length = 200;
   recordAutoGuardEvent({ action: 'friend-pending-approval', userId,
     displayName: friend.displayName || '', reason: 'new-friend-awaiting-manual-whitelist' });
   void persist();
+}
+export async function confirmAutoGuardFriend(userId) {
+  return addAutoGuardWhitelist(userId);
+}
+export async function setAutoGuardFriendReviewSettings(patch = {}) {
+  state.friendReviewSettings = { ...state.friendReviewSettings, ...patch,
+    autoBlockEnabled: patch.autoBlockEnabled === true ? true :
+      patch.autoBlockEnabled === false ? false : state.friendReviewSettings.autoBlockEnabled };
+  await persist();
+}
+export function getAutoGuardFriendReviewActions(now = Date.now()) {
+  const actions = [];
+  for (const item of state.pendingFriends) {
+    if (item.status !== 'pending') continue;
+    const review = getFriendReviewState(item, now, state.friendReviewSettings);
+    if (review.state === 'reminder-due' && !item.reminderSent) {
+      item.reminderSent = true;
+      actions.push({ type: 'reminder', userId: item.userId, displayName: item.displayName, actionAt: review.actionAt });
+    } else if (review.state === 'action-due' && state.friendReviewSettings.autoBlockEnabled && !item.actionStarted) {
+      item.actionStarted = true;
+      actions.push({ type: 'auto-block-due', userId: item.userId, displayName: item.displayName,
+        inviteMessageSlot: state.friendReviewSettings.inviteMessageSlot });
+    }
+  }
+  return actions;
+}
+export async function completeAutoGuardFriendReview(userId, outcome) {
+  const item = state.pendingFriends.find(x => x.userId === userId);
+  if (item) { item.status = outcome; item.actionStarted = false; }
+  await persist();
 }
 export async function dismissAutoGuardPendingFriend(userId) {
   state.pendingFriends = state.pendingFriends.filter(item => item.userId !== userId);
