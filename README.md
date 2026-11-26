@@ -11,25 +11,25 @@
 
 ### 為什麼開始做 AutoGuard？
 
-自從我常常待在 VRChat 的社團地圖、休息場景與公共聚會世界後，逐漸遇到一些讓我困擾的情況。
+這個專案起源於我在 VRChat 社群地圖、休息空間與公共聚會世界中的一些親身經歷。
 
-有時會出現我完全不認識的新帳號，名稱看起來像隨機生成的英文字母與數字組合。部分帳號會在個人簡介中宣傳，聲稱可以透過 **hexed.cc** 的 Reuploader 產品取得完整的 Avatar 資料庫。當我刪除或拒絕某些可疑好友邀請後，過一段時間又會出現其他帳號，繼續推薦相關社團或服務。
+我曾多次遇到陌生帳號使用近似隨機字串的名稱出現，部分帳號還會在個人簡介中宣傳 **hexed.cc** 的 Reuploader 服務，聲稱能提供完整的 Avatar 資料庫。當我拒絕或移除某些可疑邀請後，類似的宣傳內容有時又會透過其他帳號出現。
 
-這些經驗讓我開始懷疑，自己是否碰上了有組織的機器人宣傳或騷擾行為。為了確認這並非只有我遇到，我開始在網路上查找資料，並看到了這篇與自身經驗高度相似的分享：
+這些反覆發生的情況，讓我開始關注是否存在有組織的機器人宣傳或騷擾行為。我也因此搜尋其他使用者的經驗，並找到一篇與我所觀察到的現象相似的分享：
 
 - [相關使用者經驗與觀察（note.com）](https://note.com/byebye_hojorin/n/n70eafe0cf7dd)
 
-文章中提到的帳號宣傳內容，與我曾看過的簡介幾乎一致。其中包含以下原文（引用自該文章）：
+該文章提及的宣傳內容，與我曾在 VRChat 個人簡介中看過的文字相當接近，其中包含以下原文：
 
 > hexed․cc - These bots are automatically replaced when banned․ We collect avatars‚ player locations‚ and voice data until VRChat unbans our main accounts and cooperates․ The full avatar database is available through our Reuploader product at hexed․cc․ BUY NOW we are just better and our reuploader can bypass every avatar protection systemǃ
 
-看到這段內容後，我更希望能保護自己與常去的社群空間。不過，這些自述與個人觀察並不能單獨證明對方真的具有所宣稱的能力，也不能證明 VRChat 存在可被利用來未經同意強制新增好友的漏洞。
+需要特別說明的是，帳號簡介中的宣稱與個人觀察並不能單獨證實其實際能力，也不足以證明 VRChat 存在未經使用者同意便能強制新增好友的漏洞。這些內容是我開始研究防護方式的背景，而不是本專案已經驗證的結論。
 
-我也曾在自己的好友清單中，注意到一位我不記得曾經手動新增、而且簡介內容與上述宣傳相符的帳號。這讓我開始思考：除了手動刪除或封鎖之外，能不能利用 VRCX 已有的使用者資料、房間事件與管理功能，建立一套可設定、可追蹤、也能自行維護白名單的防護流程？
+我也曾在自己的好友清單中發現不記得曾親自新增、且簡介內容與上述宣傳相似的帳號。這促使我思考：能否運用 VRCX 已有的公開個人檔案資料、房間事件與管理功能，建立一套具備明確規則、活動紀錄及人工白名單管理的防護流程？
 
-**VRCX AutoGuard 就是從這個想法開始的。**
+**VRCX AutoGuard 因此誕生。**
 
-我的目標不是宣稱能辨識所有機器人，也不是破解 VRChat 或追蹤任何人的私人資料，而是把使用者可取得的公開個人檔案資訊與目前房間事件，轉換成明確、可檢查的防護規則。面對特定風險指標時，我寧願採取較保守的封鎖策略；但所有規則都應該清楚顯示，並允許使用者管理與調整。
+AutoGuard 的核心理念，是將可取得的公開個人檔案資訊與目前房間內的事件，整理成使用者能理解、檢查及自行調整的防護規則。它不宣稱能辨識所有機器人，也不會以破解遊戲或蒐集私人資料作為手段。對於符合使用者指定條件的風險指標，系統可以依設定採取相應處理；同時保留白名單、人工審核與活動紀錄，讓防護行為維持透明且可控。
 
 ### 功能介紹
 
@@ -165,9 +165,9 @@ The goal is not to claim that every bot can be detected, or to exploit VRChat or
 
 ### 繁體中文
 
-**VRCX AutoGuard 為非官方、社群自製的免費 MOD／擴充整合專案，並非 VRCX 官方產品，也不是 VRCX 原作者或開發團隊所製作、核准、背書或維護。**
+**VRCX AutoGuard 是一個免費、非官方的 VRCX 社群修改版本，並整合 AutoGuard 防護模組。它不是可直接載入官方 VRCX 的外掛，也不是 VRCX 官方產品；VRCX 原作者與開發團隊未製作、核准、背書或維護本專案。**
 
-VRCX 本體由 **VRCX Team** 維護，是一款用於 VRChat 的第三方輔助應用程式。本專案是在 VRCX 開放原始碼基礎上，額外加入 AutoGuard 防護功能的社群修改版本；並非 VRCX 官方發布版本。請參閱原專案與作者團隊：
+VRCX 本體由 **VRCX Team** 維護，是一款用於 VRChat 的第三方輔助應用程式。本專案以 VRCX 開放原始碼為基礎，整合 AutoGuard 功能後獨立建置與發布；使用者不能將 AutoGuard 當作外掛直接安裝到官方 VRCX。請參閱原專案與維護團隊：
 
 - VRCX 官方網站／專案頁：[https://github.com/vrcx-team/VRCX](https://github.com/vrcx-team/VRCX)
 - VRCX Team（原作者／維護團隊）：[https://github.com/vrcx-team](https://github.com/vrcx-team)
@@ -190,9 +190,9 @@ AutoGuard 的目的，是透過 VRCX 可取得的公開個人檔案資訊與房�
 
 ### English
 
-**VRCX AutoGuard is an unofficial, community-made, free MOD / extension integration. It is not an official VRCX product, and it is not created, approved, endorsed, or maintained by the original VRCX author(s) or development team.**
+**VRCX AutoGuard is a free, unofficial community-modified build of VRCX with an integrated AutoGuard protection module. It is not a drop-in plugin for the official VRCX application, nor is it an official VRCX product. It is not created, approved, endorsed, or maintained by the original VRCX authors or development team.**
 
-The original VRCX application is maintained by **VRCX Team** and is a third-party companion application for VRChat. This project adds AutoGuard protection features on top of the open-source VRCX codebase. It is a community-modified build, not an official VRCX release. Please refer to the original project and its maintainers:
+The original VRCX application is maintained by **VRCX Team** and is a third-party companion application for VRChat. This project integrates AutoGuard into the open-source VRCX codebase and is built and distributed separately. AutoGuard cannot be installed as a plugin into the official VRCX application. Please refer to the original project and its maintainers:
 
 - VRCX official project page: [https://github.com/vrcx-team/VRCX](https://github.com/vrcx-team/VRCX)
 - VRCX Team (original authors / maintainers): [https://github.com/vrcx-team](https://github.com/vrcx-team)
