@@ -4,7 +4,7 @@ import { useLocationStore, useUserStore } from '../stores';
 import { parseLocation } from '../shared/utils';
 import { toast } from 'vue-sonner';
 import {
-  completeAutoGuardFriendReview, getAutoGuardFriendReviewActions,
+  completeAutoGuardFriendReview, getAutoGuardFriendReviewActions, initAutoGuardStore,
   recordAutoGuardEvent, useAutoGuardDashboardState
 } from './dashboardStore.js';
 
@@ -74,5 +74,7 @@ export function startAutoGuardFriendReviewRuntime() {
     }
   };
   timer = setInterval(() => { void tick(); }, 30_000);
-  void tick();
+  void initAutoGuardStore().then(tick).catch(error => {
+    recordAutoGuardEvent({ action: 'error', reason: 'friend-review-store-init-failed', error: String(error) });
+  });
 }
