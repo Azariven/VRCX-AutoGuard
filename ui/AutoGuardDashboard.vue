@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue';
 import {
   initAutoGuardStore, setAutoGuardEnabled, setAutoGuardRule,
-  addAutoGuardWhitelist, removeAutoGuardWhitelist, recordAutoGuardPendingFriend, dismissAutoGuardPendingFriend, useAutoGuardDashboardState
+  addAutoGuardWhitelist, removeAutoGuardWhitelist, recordAutoGuardPendingFriend, dismissAutoGuardPendingFriend, setAutoGuardFriendReviewSettings, useAutoGuardDashboardState
 } from '../../autoguard/dashboardStore.js';
 
 const state = useAutoGuardDashboardState();
@@ -35,6 +35,19 @@ onMounted(() => { void initAutoGuardStore(); });
         <span><code>{{ domain }}</code><small>Bio 或 Bio Links 命中時封鎖</small></span>
         <input type="checkbox" :checked="state.rules[domain]" @change="setAutoGuardRule(domain, $event.target.checked)">
       </label>
+    </section>
+    <section class="autoguard__rules">
+      <h3>新好友逾時審核</h3>
+      <p>新增好友滿 30 分鐘提醒；提醒後再給你 5 分鐘確認。自動封鎖預設關閉。</p>
+      <label class="rule"><span>啟用逾時自動封鎖（需先設定邀請訊息範本）</span>
+        <input type="checkbox" :checked="state.friendReviewSettings?.autoBlockEnabled === true"
+          @change="setAutoGuardFriendReviewSettings({ autoBlockEnabled: $event.target.checked })">
+      </label>
+      <label class="rule"><span>邀請訊息範本 Slot（1–10）<small>請先在 VRCX 邀請訊息設定中建立指定警告文字，再填入對應 Slot</small></span>
+        <input type="number" min="1" max="10" :value="state.friendReviewSettings?.inviteMessageSlot ?? ''"
+          @change="setAutoGuardFriendReviewSettings({ inviteMessageSlot: $event.target.value === '' ? null : Math.max(1, Math.min(10, Number($event.target.value))) })">
+      </label>
+      <p class="empty">若無法取得目前房間，或邀請訊息傳送失敗，系統不得假裝已通知；不會在未送出通知時執行封鎖。</p>
     </section>
     <section class="autoguard__activity">
       <h3>新好友｜待你檢查並決定是否加入白名單 <small>{{ state.pendingFriends.length }}</small></h3>
