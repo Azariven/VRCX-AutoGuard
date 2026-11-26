@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue';
 import {
   initAutoGuardStore, setAutoGuardEnabled, setAutoGuardRule,
-  addAutoGuardWhitelist, removeAutoGuardWhitelist, useAutoGuardDashboardState
+  addAutoGuardWhitelist, removeAutoGuardWhitelist, recordAutoGuardPendingFriend, dismissAutoGuardPendingFriend, useAutoGuardDashboardState
 } from '../../autoguard/dashboardStore.js';
 
 const state = useAutoGuardDashboardState();
@@ -35,6 +35,14 @@ onMounted(() => { void initAutoGuardStore(); });
         <span><code>{{ domain }}</code><small>Bio 或 Bio Links 命中時封鎖</small></span>
         <input type="checkbox" :checked="state.rules[domain]" @change="setAutoGuardRule(domain, $event.target.checked)">
       </label>
+    </section>
+    <section class="autoguard__activity">
+      <h3>新好友｜待你檢查並決定是否加入白名單 <small>{{ state.pendingFriends.length }}</small></h3>
+      <p v-if="!state.pendingFriends.length" class="empty">目前沒有待審核的新好友。</p>
+      <ol v-else><li v-for="item in state.pendingFriends" :key="item.userId">
+        <div><strong>{{ item.displayName || item.userId }}</strong><span>{{ item.userId }} · 新增來源：{{ item.source === 'unknown' ? '未知' : item.source }}</span><time>{{ formatTime(item.timestamp) }}</time></div>
+        <div class="actions"><button @click="addAutoGuardWhitelist(item.userId)">確認安全並加入白名單</button><button class="remove" @click="dismissAutoGuardPendingFriend(item.userId)">暫不加入</button></div>
+      </li></ol>
     </section>
     <section class="autoguard__activity">
       <h3>安全候選｜等待手動加入白名單 <small>{{ state.pendingApprovals.length }}</small></h3>
@@ -77,7 +85,7 @@ h2,h3,p{margin:0}h2{font-size:1.4rem}h3{font-size:1rem;margin-bottom:12px}
 .autoguard__activity li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
 .autoguard__activity li div{display:grid;gap:4px;min-width:0}.autoguard__activity li span,.autoguard__activity time{font-size:.85rem;opacity:.7;overflow-wrap:anywhere}
 .autoguard__activity h3 small{font-size:.8rem;opacity:.6;font-weight:400;margin-left:8px}
-.autoguard button{border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:transparent;color:inherit;cursor:pointer}
+.autoguard .actions{display:flex;gap:8px;flex-wrap:wrap}.autoguard button{border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:transparent;color:inherit;cursor:pointer}
 .autoguard .remove{opacity:.7}.tag--success{color:#16834a}.tag--danger{color:#c43d3d}.tag--muted{opacity:.7}
 @media(max-width:600px){.autoguard__header{align-items:flex-start;flex-direction:column}.autoguard__stats{grid-template-columns:1fr}.autoguard__activity li{align-items:flex-start;flex-direction:column}}
 </style>
