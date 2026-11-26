@@ -42,6 +42,12 @@ AutoGuard 的核心理念，是將可取得的公開個人檔案資訊與目前�
 
 > 網域命中代表符合使用者設定的封鎖條件，不等於已證實該帳號違規或具有特定惡意能力。請依自身需求啟用規則。
 
+#### 社群互動來源檢查
+- 除了好友申請，也會檢查帶有明確發送者 ID 的群組邀請、群組加入申請，以及由玩家發起的群組推薦／資訊通知。
+- 系統會讀取發送者的公開個人檔案，檢查 Bio 與 Bio Links 是否命中已啟用的風險網域。
+- 只有個人檔案命中既有規則時，才會依 AutoGuard 設定執行封鎖；單純收到邀請或推薦不會直接導致封鎖。
+- 沒有明確發送者 ID 的系統公告不會被當成玩家來源處理；白名單中的使用者會略過檢查與封鎖。
+
 #### 2. 以目前所在世界為核心的掃描設計
 - 以目前所在房間的玩家為主要掃描範圍，公開或私人房間皆適用。
 - 不掃描不在目前房間內的好友。
@@ -118,6 +124,12 @@ The goal is not to claim that every bot can be detected, or to exploit VRChat or
 - When an enabled rule matches, AutoGuard sends a VRChat block request through VRCX's authenticated session.
 
 > A domain match means the profile met a user-configured blocking condition. It is not proof that the account has violated a rule or possesses any particular malicious capability. Enable rules according to your own risk tolerance.
+
+#### Social-interaction source checks
+- In addition to friend requests, AutoGuard reviews group invitations, group join requests, and player-attributed group recommendation/informative notifications when a concrete sender ID is available.
+- It fetches the sender's public profile and checks the Bio and Bio Links against enabled risk-domain rules.
+- Receiving an invitation or recommendation alone never triggers a block. A block is considered only when the sender's profile matches an enabled rule.
+- System announcements without a concrete sender ID are ignored, and users on the whitelist are skipped.
 
 #### 2. Current-world-focused scanning design
 - Focuses on players in the room you are currently in, whether the instance is public or private.
