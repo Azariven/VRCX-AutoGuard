@@ -5,7 +5,8 @@ import { normalizeUserId } from "./core.js";
 const SOCIAL_SIGNAL_TYPES = new Map([
   ["friendRequest", "friend-request"],
   ["group.invite", "group-invite"],
-  ["group.joinRequest", "group-join-request"]
+  ["group.joinRequest", "group-join-request"],
+  ["group.informative", "group-recommendation"]
 ]);
 
 export function getSocialSignalCandidate(notification = {}, currentUserId = "") {
