@@ -65,6 +65,19 @@ await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
   ]
 ]);
 
+await patchFile("src/coordinators/friendRelationshipCoordinator.js", [
+  [
+    "import { watchState } from '../services/watchState';",
+    "import { watchState } from '../services/watchState';\nimport { recordAutoGuardPendingFriend } from '../autoguard/dashboardStore.js';",
+    "AutoGuard pending-friend import"
+  ],
+  [
+    "export function handleFriendAdd(args) {\n    const friendStore = useFriendStore();",
+    "export function handleFriendAdd(args) {\n    const friendStore = useFriendStore();\n    const addedUserId = args.params.userId;\n    const addedUser = useUserStore().cachedUsers.get(addedUserId);\n    recordAutoGuardPendingFriend({ userId: addedUserId, displayName: addedUser?.displayName || '', source: 'unknown' });",
+    "new friend manual review queue"
+  ]
+]);
+
 await patchFile("src/stores/notification/index.js", [
   [
     "    notificationRequest,\n    queryRequest\n} from '../../api';",
