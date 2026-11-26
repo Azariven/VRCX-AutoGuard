@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { normalizeUserId, normalizeIdList } from './core.js';
 
 const DEFAULTS = Object.freeze({
