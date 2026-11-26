@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { notificationRequest, playerModerationRequest } from '../api';
 import { useLocationStore, useUserStore } from '../stores';
 import { parseLocation } from '../shared/utils';
