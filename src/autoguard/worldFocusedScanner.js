@@ -21,7 +21,7 @@ export function createWorldFocusedScanner({
   const config = { ...DEFAULTS, ...options };
   let location = '', selfId = '', session = 0;
   const present = new Map(), scanned = new Set(), friendAddedAt = new Map();
-  const timeline = [], pending = new Map();
+  const timeline = [], pending = new Map(), inFlight = new Set();
   const whitelisted = id => normalizeIdList(getWhitelist()).includes(id);
   const emit = event => onEvent({ at: new Date().toISOString(), ...event });
 
@@ -31,6 +31,7 @@ export function createWorldFocusedScanner({
       return { action: 'ignored', reason: 'not-in-world-or-whitelisted' };
     }
     if (scanned.has(id)) return { action: 'already-scanned', userId: id };
+    if (inFlight.has(id)) return { action: 'scan-in-progress', userId: id };
     const profile = getProfile(id);
     if (!profile) {
       pending.set(id, { reason, session });
@@ -39,13 +40,22 @@ export function createWorldFocusedScanner({
     }
     const scanSession = session;
     pending.delete(id);
+    inFlight.add(id);
     emit({ action: 'scan-started', userId: id, reason });
-    let result;
     try {
-      result = await inspectProfile(profile, selfId, { reason, location, session });
+      const result = await inspectProfile(profile, selfId, { reason, location, session });
+      if (scanSession !== session || !present.has(id)) return { action: 'stale-session', userId: id };
+      scanned.add(id);
+      if (result?.action === 'no-match') {
+        emit({ action: 'pending-approval', userId: id,
+          displayName: profile.displayName || '', status: 'safe-pending-confirmation', reason });
+      }
+      return result;
     } catch (error) {
       // A transient profile/API failure must not permanently mark this user scanned.
-      pending.set(id, { reason, session, retry: true });
+      if (scanSession === session && present.has(id)) {
+        pending.set(id, { reason, session, retry: true });
+      }
       emit({
         action: 'scan-error',
         userId: id,
@@ -53,14 +63,9 @@ export function createWorldFocusedScanner({
         message: String(error?.message || error)
       });
       return { action: 'error', userId: id, error };
+    } finally {
+      inFlight.delete(id);
     }
-    if (scanSession !== session || !present.has(id)) return { action: 'stale-session', userId: id };
-    scanned.add(id);
-    if (result?.action === 'no-match') {
-      emit({ action: 'pending-approval', userId: id,
-        displayName: profile.displayName || '', status: 'safe-pending-confirmation', reason });
-    }
-    return result;
   }
 
   async function profileAvailable(userId) {
@@ -79,7 +84,7 @@ export function createWorldFocusedScanner({
     session++;
     location = String(currentLocation || '');
     selfId = normalizeUserId(currentUserId);
-    present.clear(); scanned.clear(); pending.clear(); timeline.length = 0;
+    present.clear(); scanned.clear(); pending.clear(); inFlight.clear(); timeline.length = 0;
     for (const player of players) {
       const id = normalizeUserId(player.userId || player.id);
       if (id && id !== selfId) present.set(id, { ...player, joinedAt: player.joinedAt || Date.now() });
@@ -135,12 +140,12 @@ export function createWorldFocusedScanner({
   }
 
   function exitWorld() {
-    location = ''; present.clear(); scanned.clear(); pending.clear(); timeline.length = 0; session++;
+    location = ''; present.clear(); scanned.clear(); pending.clear(); inFlight.clear(); timeline.length = 0; session++;
   }
 
   return {
     setFriendAdded, enterWorld, playerJoined, playerLeft, profileAvailable, exitWorld,
     isInCurrentWorld: id => present.has(normalizeUserId(id)),
-    getStats: () => ({ location, present: present.size, scanned: scanned.size, pending: pending.size })
+    getStats: () => ({ location, present: present.size, scanned: scanned.size, pending: pending.size, inFlight: inFlight.size })
   };
 }
