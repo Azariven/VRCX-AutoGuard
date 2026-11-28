@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -21,12 +24,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: vrcx-team/VRCX
-          ref: e819c4e4ee13218393fcf8263e7745971dfc9821
+          ref: v2026.11.14
           path: vrcx-source
-      - name: Copy AutoGuard modules and validate patch
+      - name: Copy AutoGuard modules and validate integration
         run: |
           mkdir -p vrcx-source/src/autoguard
-          cp src/autoguard/core.js src/autoguard/accountRiskAssessment.js src/autoguard/profileThreatGuard.js src/autoguard/dashboardStore.js src/autoguard/worldFocusedScanner.js src/autoguard/friendReviewPolicy.js src/autoguard/friendReviewRuntime.js src/autoguard/socialSignalPolicy.js vrcx-source/src/autoguard/
+          cp src/autoguard/*.js vrcx-source/src/autoguard/
           mkdir -p vrcx-source/src/views/AutoGuard
           cp ui/AutoGuardDashboard.vue vrcx-source/src/views/AutoGuard/AutoGuard.vue
           node scripts/apply-vrcx-integration.mjs vrcx-source
@@ -38,38 +41,14 @@ jobs:
       - name: Install VRCX dependencies
         working-directory: vrcx-source
         run: npm ci
-      - name: Compare VRCX typechecks with unmodified upstream baseline
+      - name: Type-check integrated VRCX
         working-directory: vrcx-source
-        shell: bash
         run: |
-          set +e
-          mkdir -p /tmp/vrcx-baseline
-          git archive HEAD | tar -x -C /tmp/vrcx-baseline
-          ln -s "$GITHUB_WORKSPACE/vrcx-source/node_modules" /tmp/vrcx-baseline/node_modules
-          for script in typecheck:js typecheck:vue; do
-            (cd /tmp/vrcx-baseline && npm run "$script") > "/tmp/${script//:/-}-baseline.log" 2>&1
-            baseline_status=$?
-            npm run "$script" > "/tmp/${script//:/-}-patched.log" 2>&1
-            patched_status=$?
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-baseline.log" | sed -E 's/^\s*\[error\]//; s/^\s+//; s/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-baseline-errors.txt" || true
-            grep -E 'error TS[0-9]+' "/tmp/${script//:/-}-patched.log" | sed -E 's/^\s*\[error\]//; s/^\s+//; s/\([0-9]+,[0-9]+\)//' | sort > "/tmp/${script//:/-}-patched-errors.txt" || true
-            if ! diff -u "/tmp/${script//:/-}-baseline-errors.txt" "/tmp/${script//:/-}-patched-errors.txt"; then
-              echo "AutoGuard introduced new $script diagnostics."
-              cat "/tmp/${script//:/-}-patched.log"
-              exit 1
-            fi
-            echo "$script diagnostics unchanged versus upstream (baseline exit=$baseline_status, patched exit=$patched_status)."
-          done
-          set -e
+          npm run typecheck:js
+          npm run typecheck:vue
       - name: Build VRCX renderer with AutoGuard
         working-directory: vrcx-source
         run: npm run prod
-      - uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: vrcx-autoguard-renderer-build
-          path: vrcx-source/build/html
-          if-no-files-found: error
 
   vrcx-windows-app:
     runs-on: windows-latest
@@ -78,15 +57,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: vrcx-team/VRCX
-          ref: e819c4e4ee13218393fcf8263e7745971dfc9821
+          ref: v2026.11.14
           path: vrcx-source
-      - name: Copy AutoGuard modules and apply patch
+      - name: Copy AutoGuard modules and apply integration
         shell: pwsh
         run: |
           git -C vrcx-source config core.autocrlf false
           git -C vrcx-source reset --hard HEAD
           New-Item -ItemType Directory -Force vrcx-source/src/autoguard | Out-Null
-          Copy-Item src/autoguard/core.js, src/autoguard/accountRiskAssessment.js, src/autoguard/profileThreatGuard.js, src/autoguard/dashboardStore.js, src/autoguard/worldFocusedScanner.js, src/autoguard/friendReviewPolicy.js, src/autoguard/friendReviewRuntime.js, src/autoguard/socialSignalPolicy.js -Destination vrcx-source/src/autoguard/
+          Copy-Item (Get-ChildItem src/autoguard/*.js) -Destination vrcx-source/src/autoguard/
           New-Item -ItemType Directory -Force vrcx-source/src/views/AutoGuard | Out-Null
           Copy-Item ui/AutoGuardDashboard.vue -Destination vrcx-source/src/views/AutoGuard/AutoGuard.vue
           node scripts/apply-vrcx-integration.mjs vrcx-source
@@ -110,10 +89,7 @@ jobs:
         shell: pwsh
         run: |
           $core = "build/Electron/win-x64/VRCX-Electron.cjs"
-          if (!(Test-Path $core)) {
-            throw "Missing required Electron core: $core"
-          }
-          Get-Item $core | Format-List FullName, Length
+          if (!(Test-Path $core)) { throw "Missing required Electron core: $core" }
       - name: Build VRCX renderer
         working-directory: vrcx-source
         run: npm run prod
@@ -124,173 +100,5 @@ jobs:
         if: success()
         with:
           name: vrcx-autoguard-windows-installer
-          path: vrcx-source/build/*.exe
+          path: vrcx-source/build/*Setup*x64.exe
           if-no-files-found: error
-
-
-  publish-release:
-    if: "github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: publish Build 91')"
-    needs: [unit-tests, vrcx-integration, vrcx-windows-app]
-    runs-on: windows-latest
-    permissions:
-      contents: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: preview-2026.11.26-build91
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: vrcx-autoguard-windows-installer
-          path: release-assets/download
-      - name: Assemble bilingual full release package
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          New-Item -ItemType Directory -Force release-assets | Out-Null
-          $installers = @(Get-ChildItem -Path "release-assets/download" -Filter "*.exe" -File)
-          if ($installers.Count -ne 1) {
-            throw "Expected exactly one Windows installer, found $($installers.Count)."
-          }
-
-          $installerPath = "release-assets/VRCX-AutoGuard-Setup-Windows-x64.exe"
-          Copy-Item $installers[0].FullName $installerPath -Force
-
-          $sourceZip = "release-assets/VRCX-AutoGuard-Source.zip"
-          git archive --format=zip --output=$sourceZip $env:GITHUB_SHA
-          if ($LASTEXITCODE -ne 0 -or !(Test-Path $sourceZip)) {
-            throw "Could not create the source archive."
-          }
-
-          $guide = @"
-          # VRCX AutoGuard Preview Build 91
-
-          ## 繁體中文
-
-          VRCX AutoGuard 是免費、非官方的 VRCX 社群修改版本，整合 AutoGuard 防護模組。它不是可以載入官方 VRCX 的外掛，也不是 VRCX Team 的官方產品。
-
-          ### 主要功能
-          - **公開個人檔案檢查：**檢查 Bio 與 Bio Links，依使用者啟用的完整網域規則比對，例如 hexed.cc、oversee.lol。
-          - **社群互動來源檢查：**檢查帶有明確發送者 ID 的好友申請、群組邀請、群組加入申請與玩家推薦通知。收到通知本身不會直接封鎖；必須是發送者的公開個人檔案命中啟用規則，才會依設定處理。
-          - **白名單與人工審核：**可自行管理白名單、待確認候選與近期活動紀錄。
-          - **新好友審核：**預設 30 分鐘提醒並保留 5 分鐘緩衝；自動封鎖預設關閉。
-          - **目前世界掃描設計：**以目前所在房間為主要掃描範圍，不以房間外好友作為掃描對象。
-
-          ### 安裝
-          1. 完全關閉正在執行的 VRCX。
-          2. 執行 VRCX-AutoGuard-Setup-Windows-x64.exe。
-          3. 依安裝程式指示完成安裝並啟動 VRCX AutoGuard。
-          4. 初次使用請先檢查風險網域、白名單與自動封鎖設定，建議先以人工審核模式測試。
-
-          ### 重要限制
-          CI 成功代表單元測試及建置工作通過，不代表所有 VRChat 即時行為均已驗證。世界玩家掃描及社交通知事件仍需在實際 VRCX／VRChat 環境測試。網域命中只是符合使用者設定的條件，並非惡意行為的證明。請自行承擔封鎖決策的社交影響。
-
-          ### 版本資訊
-          - 日期：2026-11-26
-          - 平台：Windows x64
-          - AutoGuard 原始碼 commit：$env:GITHUB_SHA
-          - 上游 VRCX commit：e819c4e4ee13218393fcf8263e7745971dfc9821
-
-          ---
-
-          ## English
-
-          VRCX AutoGuard is a free, unofficial community-modified VRCX build with an integrated defensive AutoGuard module. It is not a drop-in plugin for the official VRCX app and is not an official VRCX Team product.
-
-          ### Key features
-          - **Public profile checks:** Reviews public Bio and Bio Links against exact domains enabled by the user, such as hexed.cc and oversee.lol.
-          - **Social-interaction source checks:** Reviews friend requests, group invitations, group join requests, and player-attributed group recommendation notifications when a concrete sender ID is available. A notification alone never triggers a block; the sender's public profile must match an enabled rule before configured handling can occur.
-          - **Whitelist and manual review:** Manage your own whitelist, pending candidates, and recent activity history.
-          - **New-friend review:** Reminder after 30 minutes with an additional 5-minute grace period; automatic blocking is disabled by default.
-          - **Current-world scanning design:** Focuses on the room you are currently in rather than scanning friends outside that instance.
-
-          ### Installation
-          1. Fully exit any running VRCX process.
-          2. Run VRCX-AutoGuard-Setup-Windows-x64.exe.
-          3. Complete setup and launch VRCX AutoGuard.
-          4. Review risk-domain rules, whitelist entries, and automatic-block settings. Manual review is recommended for initial testing.
-
-          ### Important limitations
-          Successful CI means the unit tests and build jobs passed; it does not verify every live VRChat behavior. World-player scanning and social-notification handling still require testing in an actual VRCX／VRChat environment. A domain match only means a user-configured condition matched; it is not proof of malicious behavior. Blocking can affect social relationships, and users remain responsible for their decisions.
-
-          ### Build information
-          - Date: 2026-11-26
-          - Platform: Windows x64
-          - AutoGuard source commit: $env:GITHUB_SHA
-          - Upstream VRCX commit: e819c4e4ee13218393fcf8263e7745971dfc9821
-          "@
-          Set-Content -Path "release-assets/README-Install.md" -Value $guide -Encoding utf8
-
-          $hashLines = @()
-          foreach ($file in @($installerPath, $sourceZip)) {
-            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLowerInvariant()
-            $hashLines += "$hash  $(Split-Path $file -Leaf)"
-          }
-          Set-Content -Path "release-assets/SHA256SUMS.txt" -Value $hashLines -Encoding ascii
-
-          $notes = @"
-          # VRCX AutoGuard Preview Build 91
-
-          ## 繁體中文介紹
-
-          VRCX AutoGuard 是一套整合於 VRCX 的實驗性防護工具，目標是協助使用者檢查公開個人檔案中的指定網域，以及由好友申請、群組邀請、加入申請和玩家推薦通知帶來的社交互動來源。
-
-          **功能重點**
-          - 比對公開 Bio 與 Bio Links 中由使用者啟用的風險網域。
-          - 對有明確發送者 ID 的社交通知檢查發送者公開檔案；通知本身不會直接觸發封鎖。
-          - 提供白名單、待人工確認候選、活動紀錄及新好友審核流程。
-          - 新好友提醒預設為 30 分鐘，另有 5 分鐘緩衝；自動封鎖預設關閉。
-          - 以目前所在世界為核心的掃描設計，避免把房間外好友當作掃描目標。
-
-          **使用提醒**
-          本專案不是 VRChat 官方產品，也不是 VRCX Team 製作、核准或維護的版本。網域命中僅代表符合使用者設定條件，不能單獨證明帳號為機器人或具有惡意行為。CI 建置成功不等於線上 VRChat 行為已全部驗證；世界掃描與社交通知仍需要實際環境測試。建議先使用人工審核，再考慮啟用自動封鎖。
-
-          ## English Introduction
-
-          VRCX AutoGuard is an experimental defensive utility integrated into a community-modified VRCX build. It helps users review selected domains in public profile bios and inspect the sources of social interactions, including friend requests, group invitations, group join requests, and player-attributed group recommendations.
-
-          **Highlights**
-          - Matches public Bio and Bio Links against user-enabled risk domains.
-          - Reviews the sender's public profile for supported social notifications with a concrete sender ID; the notification itself does not trigger a block.
-          - Provides whitelist management, pending manual review, activity history, and new-friend review workflows.
-          - New-friend reminder defaults to 30 minutes plus a 5-minute grace period; automatic blocking is off by default.
-          - Uses a current-world-focused scanning design rather than treating off-instance friends as scan targets.
-
-          **Important notice**
-          This is not an official VRChat product and is not created, approved, or maintained by VRCX Team. A domain match only means a configured condition matched; it is not proof that an account is a bot or malicious. CI success does not establish that all live VRChat behaviors are verified. World scanning and social-notification handling still require in-client testing. Start with manual review before considering automatic blocking.
-
-          ## Build details
-          - Date: 2026-11-26
-          - Platform: Windows x64
-          - Source commit: $env:GITHUB_SHA
-          - Upstream VRCX commit: e819c4e4ee13218393fcf8263e7745971dfc9821
-          "@
-          Set-Content -Path "release-assets/RELEASE-NOTES.md" -Value $notes -Encoding utf8
-
-          $packageZip = "release-assets/VRCX-AutoGuard-Windows-x64-Full-Package.zip"
-          Compress-Archive -Path $installerPath, $sourceZip, "release-assets/README-Install.md", "release-assets/RELEASE-NOTES.md", "release-assets/SHA256SUMS.txt" -DestinationPath $packageZip -Force
-
-          $packageHash = (Get-FileHash -Path $packageZip -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -Path "release-assets/FULL-PACKAGE-SHA256.txt" -Value "$packageHash  $(Split-Path $packageZip -Leaf)" -Encoding ascii
-      - name: Publish GitHub Release
-        shell: pwsh
-        run: |
-          $releaseAssets = @(
-            "release-assets/VRCX-AutoGuard-Setup-Windows-x64.exe",
-            "release-assets/VRCX-AutoGuard-Windows-x64-Full-Package.zip",
-            "release-assets/VRCX-AutoGuard-Source.zip",
-            "release-assets/README-Install.md",
-            "release-assets/RELEASE-NOTES.md",
-            "release-assets/SHA256SUMS.txt",
-            "release-assets/FULL-PACKAGE-SHA256.txt"
-          )
-          $ghArgs = @("release", "create", $env:RELEASE_TAG) + $releaseAssets + @(
-            "--target", $env:GITHUB_SHA,
-            "--title", "VRCX AutoGuard Preview Build 91",
-            "--notes-file", "release-assets/RELEASE-NOTES.md",
-            "--prerelease"
-          )
-          & gh @ghArgs
-          if ($LASTEXITCODE -ne 0) {
-            throw "GitHub Release creation failed."
-          }
