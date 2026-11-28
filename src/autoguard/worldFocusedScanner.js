@@ -21,7 +21,7 @@ export function createWorldFocusedScanner({
   const config = { ...DEFAULTS, ...options };
   let location = '', selfId = '', session = 0;
   const present = new Map(), scanned = new Set(), friendAddedAt = new Map();
-  const timeline = [], pending = new Map(), inFlight = new Set();
+  const timeline = [], pending = new Map(), inFlight = new Map();
   const whitelisted = id => normalizeIdList(getWhitelist()).includes(id);
   const emit = event => onEvent({ at: new Date().toISOString(), ...event });
 
@@ -31,7 +31,7 @@ export function createWorldFocusedScanner({
       return { action: 'ignored', reason: 'not-in-world-or-whitelisted' };
     }
     if (scanned.has(id)) return { action: 'already-scanned', userId: id };
-    if (inFlight.has(id)) return { action: 'scan-in-progress', userId: id };
+    if (inFlight.get(id) === session) return { action: 'scan-in-progress', userId: id };
     const profile = getProfile(id);
     if (!profile) {
       pending.set(id, { reason, session });
@@ -40,7 +40,7 @@ export function createWorldFocusedScanner({
     }
     const scanSession = session;
     pending.delete(id);
-    inFlight.add(id);
+    inFlight.set(id, scanSession);
     emit({ action: 'scan-started', userId: id, reason });
     try {
       const result = await inspectProfile(profile, selfId, { reason, location, session });
@@ -64,7 +64,7 @@ export function createWorldFocusedScanner({
       });
       return { action: 'error', userId: id, error };
     } finally {
-      inFlight.delete(id);
+      if (inFlight.get(id) === scanSession) inFlight.delete(id);
     }
   }
 
@@ -90,6 +90,13 @@ export function createWorldFocusedScanner({
       if (id && id !== selfId) present.set(id, { ...player, joinedAt: player.joinedAt || Date.now() });
     }
     emit({ action: 'world-entered', location, playerCount: present.size });
+  }
+
+  async function scanInitialRoster() {
+    const ids = [...present.keys()];
+    const results = [];
+    for (const id of ids) results.push(await scan(id, 'initial-roster'));
+    return { action: 'roster-scanned', count: results.length, results };
   }
 
   function trim(now) {
@@ -144,7 +151,7 @@ export function createWorldFocusedScanner({
   }
 
   return {
-    setFriendAdded, enterWorld, playerJoined, playerLeft, profileAvailable, exitWorld,
+    setFriendAdded, enterWorld, scanInitialRoster, playerJoined, playerLeft, profileAvailable, exitWorld,
     isInCurrentWorld: id => present.has(normalizeUserId(id)),
     getStats: () => ({ location, present: present.size, scanned: scanned.size, pending: pending.size, inFlight: inFlight.size })
   };
