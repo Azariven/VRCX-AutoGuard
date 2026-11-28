@@ -84,7 +84,7 @@ AutoGuard 的核心理念，是將可取得的公開個人檔案資訊與目前�
 
 ### 專案狀態
 
-- 目標整合版本：VRCX commit `e819c4e4ee13218393fcf8263e7745971dfc9821`。
+- 目標整合版本：VRCX commit `v2026.11.14`。
 - 專案包含自動化單元測試、VRCX 整合腳本與 Windows 建置流程。
 - 請以 GitHub Actions 最新成功的完整 Windows 建置為準；renderer 測試產物不是 Windows 安裝程式。
 
@@ -167,7 +167,7 @@ The goal is not to claim that every bot can be detected, or to exploit VRChat or
 
 ### Project Status
 
-- Target integration version: VRCX commit `e819c4e4ee13218393fcf8263e7745971dfc9821`.
+- Target integration version: VRCX commit `v2026.11.14`.
 - The repository includes automated unit tests, a VRCX integration script, and a Windows build workflow.
 - Use the latest successful full Windows build from GitHub Actions. A renderer-only artifact is not a Windows installer.
 
