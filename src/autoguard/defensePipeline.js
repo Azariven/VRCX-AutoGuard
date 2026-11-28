@@ -104,19 +104,17 @@ export function createDefensePipeline({
             players,
             currentUserId: ''
         });
+        if (typeof worldScanner.scanInitialRoster === 'function') {
+            return worldScanner.scanInitialRoster();
+        }
         const results = [];
         for (const player of players) {
             const userId = player?.userId || player?.id;
-            if (!userId) continue;
-            const profile = player.profile || getProfile(userId);
-            if (profile && typeof worldScanner.profileAvailable === 'function') {
-                results.push(await worldScanner.profileAvailable(userId));
-            } else if (typeof worldScanner.playerJoined === 'function') {
-                results.push(await worldScanner.playerJoined({
-                    ...player,
-                    location: activeInstanceId
-                }));
-            }
+            if (!userId || typeof worldScanner.playerJoined !== 'function') continue;
+            results.push(await worldScanner.playerJoined({
+                ...player,
+                location: activeInstanceId
+            }));
         }
         return { action: 'roster-processed', count: results.length, results };
     }
