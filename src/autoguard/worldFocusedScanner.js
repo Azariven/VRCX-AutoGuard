@@ -37,10 +37,25 @@ export function createWorldFocusedScanner({
       emit({ action: 'awaiting-profile', userId: id, reason });
       return { action: 'awaiting-profile', userId: id };
     }
-    scanned.add(id);
+    const scanSession = session;
     pending.delete(id);
     emit({ action: 'scan-started', userId: id, reason });
-    const result = await inspectProfile(profile, selfId, { reason, location });
+    let result;
+    try {
+      result = await inspectProfile(profile, selfId, { reason, location, session });
+    } catch (error) {
+      // A transient profile/API failure must not permanently mark this user scanned.
+      pending.set(id, { reason, session, retry: true });
+      emit({
+        action: 'scan-error',
+        userId: id,
+        reason,
+        message: String(error?.message || error)
+      });
+      return { action: 'error', userId: id, error };
+    }
+    if (scanSession !== session || !present.has(id)) return { action: 'stale-session', userId: id };
+    scanned.add(id);
     if (result?.action === 'no-match') {
       emit({ action: 'pending-approval', userId: id,
         displayName: profile.displayName || '', status: 'safe-pending-confirmation', reason });
