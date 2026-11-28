@@ -100,3 +100,41 @@ test('a scan completing after room transition cannot mark the new room scan comp
   const stats = scanner.getStats();
   assert.equal(stats.scanned, 0);
 });
+
+test('duplicate join events do not start concurrent profile inspections', async () => {
+  let finish;
+  const calls = [];
+  const scanner = createWorldFocusedScanner({
+    getProfile: userId => ({ id: userId, bio: '' }),
+    inspectProfile: async profile => {
+      calls.push(profile.id);
+      return new Promise(resolve => { finish = resolve; });
+    }
+  });
+  scanner.enterWorld({ currentLocation: 'wrld_concurrent:instance', currentUserId: id(99) });
+  const first = scanner.playerJoined({ userId: id(7), timestamp: 7000 });
+  await Promise.resolve();
+  const duplicate = await scanner.playerJoined({ userId: id(7), timestamp: 7001 });
+  assert.equal(duplicate.action, 'scan-in-progress');
+  assert.deepEqual(calls, [id(7)]);
+  finish({ action: 'no-match' });
+  await first;
+  assert.equal(scanner.getStats().scanned, 1);
+});
+
+test('initial roster is scanned through the same one-scan-per-session path', async () => {
+  const calls = [];
+  const scanner = createWorldFocusedScanner({
+    getProfile: userId => ({ id: userId, bio: '' }),
+    inspectProfile: async profile => { calls.push(profile.id); return { action: 'no-match' }; }
+  });
+  scanner.enterWorld({
+    currentLocation: 'wrld_roster:instance',
+    currentUserId: id(99),
+    players: [{ userId: id(8) }, { userId: id(9) }]
+  });
+  const result = await scanner.scanInitialRoster();
+  assert.equal(result.count, 2);
+  assert.deepEqual(calls, [id(8), id(9)]);
+  assert.equal(scanner.getStats().scanned, 2);
+});
