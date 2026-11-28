@@ -56,3 +56,47 @@ test('scans a newly joined non-friend in the active room exactly once', async ()
   await scanner.playerJoined({ userId: id(4), timestamp: 4000 });
   assert.deepEqual(calls, [id(4)]);
 });
+
+test('transient profile inspection failure can be retried when the profile is available again', async () => {
+  const calls = [];
+  let fail = true;
+  const scanner = createWorldFocusedScanner({
+    getProfile: userId => ({ id: userId, bio: '' }),
+    inspectProfile: async profile => {
+      calls.push(profile.id);
+      if (fail) {
+        fail = false;
+        throw new Error('temporary API failure');
+      }
+      return { action: 'no-match' };
+    }
+  });
+  scanner.enterWorld({ currentLocation: 'wrld_retry:instance', currentUserId: id(99) });
+  const first = await scanner.playerJoined({ userId: id(5), timestamp: 5000 });
+  assert.equal(first.action, 'error');
+  const retry = await scanner.profileAvailable(id(5));
+  assert.equal(retry.action, 'no-match');
+  assert.deepEqual(calls, [id(5), id(5)]);
+  assert.equal(scanner.getStats().scanned, 1);
+});
+
+test('a scan completing after room transition cannot mark the new room scan complete', async () => {
+  let resolveFirst;
+  const calls = [];
+  const scanner = createWorldFocusedScanner({
+    getProfile: userId => ({ id: userId, bio: '' }),
+    inspectProfile: async profile => {
+      calls.push(profile.id);
+      if (calls.length === 1) return new Promise(resolve => { resolveFirst = resolve; });
+      return { action: 'no-match' };
+    }
+  });
+  scanner.enterWorld({ currentLocation: 'wrld_a:instance', currentUserId: id(99) });
+  const first = scanner.playerJoined({ userId: id(6), timestamp: 6000 });
+  await Promise.resolve();
+  scanner.enterWorld({ currentLocation: 'wrld_b:instance', players: [{ userId: id(6) }], currentUserId: id(99) });
+  resolveFirst({ action: 'no-match' });
+  await first;
+  const stats = scanner.getStats();
+  assert.equal(stats.scanned, 0);
+});
